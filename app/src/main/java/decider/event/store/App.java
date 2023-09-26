@@ -1,8 +1,18 @@
 package decider.event.store;
 
+import java.sql.Connection;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Flow.Publisher;
+
+import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
+import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.api.PostgresqlConnection;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public class App {
 
@@ -12,8 +22,33 @@ public class App {
     // do subscription on event log to make view
 
     public static void main(String[] args) {
+
+        Map<String, String> options = new HashMap<>();
+        options.put("lock_timeout", "10s");
+
+        PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(PostgresqlConnectionConfiguration.builder()
+            .host("localhost")
+            .port(5402)  // optional, defaults to 5432
+            .username("postgres")
+            .password("password")
+            .database("postgres")  // optional
+            .options(options) // optional
+            .build());
+
+        Mono<PostgresqlConnection> mono = connectionFactory.create();
+        Flux<String> z = mono.flatMapMany(connection -> {
+
+            var r = connection.createStatement("SELECT 1 col")
+                .execute()
+                .flatMap(it -> it.map((row, rowMetadata) -> row.get("col", String.class)));
+            return r;
+        }).map(v -> {
+            System.out.println("v: " + v);
+            return v;
+        });
+        System.out.println(z);
+
         var events = new ArrayList<Event>();
-        var c = new Command<Increment>(OffsetDateTime.now(), new Increment(1));
         var timestamp = OffsetDateTime.now();
         var commandLog = List.of(
             new Command<Increment>(timestamp, new Increment(1)),
@@ -49,11 +84,11 @@ public class App {
     // aka applicator
     static State evolve(State currentState, Event event) {
         if (event instanceof IncrementEvent e) {
-            var newState = new State(currentState.count() + e.count());
+            var newState = new State(currentState.count() + e.amount());
             return newState;
         }
         else if (event instanceof DecrementEvent e) {
-            var newState = new State(currentState.count() - e.count());
+            var newState = new State(currentState.count() - e.amount());
             return newState;
         }
         throw new UnsupportedOperationException("invalid event");
@@ -62,9 +97,10 @@ public class App {
 
 interface Event {}
 record Command<T>(OffsetDateTime transactionTime, T data) { }
+record Event2<T>(OffsetDateTime transactionTime, T data) { }
 
-record IncrementEvent(long count) implements Event {}
-record DecrementEvent(long count) implements Event {}
+record IncrementEvent(long amount) implements Event {}
+record DecrementEvent(long amount) implements Event {}
 record Increment(long count) {}
 record Decrement(long count) {}
 
