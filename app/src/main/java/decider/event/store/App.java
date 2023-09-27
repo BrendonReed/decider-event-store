@@ -1,18 +1,42 @@
 package decider.event.store;
 
-import java.sql.Connection;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Flow.Publisher;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.postgresql.api.PostgresqlConnection;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+
+class Storage {
+
+    private PostgresqlConnectionFactory connectionFactory;
+
+    public Storage(String host, int port, String database, String username, String password) {
+        Map<String, String> options = new HashMap<>();
+        options.put("lock_timeout", "10s");
+        this.connectionFactory = new PostgresqlConnectionFactory(PostgresqlConnectionConfiguration.builder()
+            .host(host)
+            .port(5402)  // optional, defaults to 5432
+            .username(username)
+            .password(password)
+            .database(database)  // optional
+            .options(options) // optional
+            .build());
+    }
+
+    public Flux<String> queryCurrentTime() {
+        // TODO: block?
+        var connection = connectionFactory.create().block();
+        return connection.createStatement("select now() transaction_time")
+            .execute()
+            .flatMap(it -> it.map((row, rowMetadata) -> {
+                return row.get("transaction_time", String.class);
+            }));
+    }
+}
 
 public class App {
 
@@ -22,31 +46,8 @@ public class App {
     // do subscription on event log to make view
 
     public static void main(String[] args) {
-
-        Map<String, String> options = new HashMap<>();
-        options.put("lock_timeout", "10s");
-
-        PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(PostgresqlConnectionConfiguration.builder()
-            .host("localhost")
-            .port(5402)  // optional, defaults to 5432
-            .username("postgres")
-            .password("password")
-            .database("postgres")  // optional
-            .options(options) // optional
-            .build());
-
-        Mono<PostgresqlConnection> mono = connectionFactory.create();
-        Flux<String> z = mono.flatMapMany(connection -> {
-
-            var r = connection.createStatement("SELECT 1 col")
-                .execute()
-                .flatMap(it -> it.map((row, rowMetadata) -> row.get("col", String.class)));
-            return r;
-        }).map(v -> {
-            System.out.println("v: " + v);
-            return v;
-        });
-        System.out.println(z);
+        var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
+        storage.queryCurrentTime().subscribe(System.out::println);
 
         var events = new ArrayList<Event>();
         var timestamp = OffsetDateTime.now();
@@ -60,6 +61,7 @@ public class App {
         for (Command<?> command : commandLog) {
             var currentState = Utils.fold(new State(0), events, App::evolve);
             var newEvents = decide(currentState, command);
+            // save newEvents
             events.addAll(newEvents);
             var newState = Utils.fold(new State(0), events, App::evolve);
             System.out.println("current State: "  + newState);
