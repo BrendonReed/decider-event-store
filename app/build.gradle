@@ -29,7 +29,8 @@ dependencies {
 
     implementation 'org.postgresql:r2dbc-postgresql:1.0.2.RELEASE'
     implementation 'io.projectreactor:reactor-core:3.5.10'
-    // https://mvnrepository.com/artifact/io.projectreactor/reactor-test
+    implementation 'org.springframework.data:spring-data-r2dbc:3.1.4'
+
     testImplementation 'io.projectreactor:reactor-test:3.5.10'
 }
 

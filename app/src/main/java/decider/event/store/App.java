@@ -5,10 +5,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import org.springframework.data.annotation.Id;
+
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 class Storage {
 
@@ -27,6 +32,15 @@ class Storage {
             .build());
     }
 
+    public Mono<Sandbox> saveEvent() {
+        var template = new R2dbcEntityTemplate(connectionFactory);
+        return template.insert(new Sandbox(UUID.randomUUID(), "payload1"));
+    }
+    public Mono<Sandbox> saveSandbox() {
+        var template = new R2dbcEntityTemplate(connectionFactory);
+        return template.insert(new Sandbox(UUID.randomUUID(), "payload1"));
+    }
+
     public Flux<String> queryCurrentTime() {
         // TODO: block?
         var connection = connectionFactory.create().block();
@@ -38,6 +52,8 @@ class Storage {
     }
 }
 
+record Sandbox(@Id UUID id, String payload) {}
+
 public class App {
 
     // create decider function (mutate): state -> command -> event list
@@ -48,6 +64,7 @@ public class App {
     public static void main(String[] args) {
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
         storage.queryCurrentTime().subscribe(System.out::println);
+        storage.saveSandbox().block();
 
         var events = new ArrayList<Event>();
         var timestamp = OffsetDateTime.now();

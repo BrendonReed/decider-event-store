@@ -7,4 +7,9 @@ create table events (
   transaction_time timestamp not null,
   correlation_id uuid not null,
   payload jsonb not null
+);
+
+create table sandbox (
+  id uuid primary key,
+  payload text
 )
