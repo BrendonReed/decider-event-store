@@ -1,8 +1,10 @@
 package decider.event.store;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.List;
+
+import reactor.core.publisher.Flux;
 
 public class App {
 
@@ -12,13 +14,11 @@ public class App {
     // do subscription on event log to make view
 
     public static void main(String[] args) {
-        var storage = new Storage("localhost", 
-            5402,
-            "postgres",
-            "postgres",
-            "password");
-        storage.queryCurrentTime().subscribe(System.out::println);
-        System.out.println("starting!");
+        var storage = new Storage("localhost",
+                5402,
+                "postgres",
+                "postgres",
+                "password");
 
         var events = new ArrayList<Event<?>>();
         var timestamp = OffsetDateTime.now();
@@ -29,12 +29,11 @@ public class App {
         // 3) validates against system state if needed, like uniqueness (impure)
         // 4) enhances data with context like time, caller data, maybe system data
         // 5) writes to command log
-        var commandLog = List.of(
-            new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
-            new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
-            new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
-            new Command<Decider.Decrement>(timestamp, new Decider.Decrement(1))
-            );
+        var commandLog = Flux.just(
+                new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
+                new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
+                new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
+                new Command<Decider.Decrement>(timestamp, new Decider.Decrement(1)));
 
         // command processor:
         // 1) listens for commands on command log
@@ -42,20 +41,26 @@ public class App {
         // 3) checks state after new events for validity
         // 4) saves events
         // 5) maybe calculates next state
-        for (Command<?> command : commandLog) {
-            var currentState = Utils.fold(Decider.initialState(), events, Decider::evolve);
-            var newEvents = Decider.decide(currentState, command);
-            // save newEvents
-            events.addAll(newEvents);
-            newEvents.forEach(e -> {
-                storage.saveEvent(e).block();
+        var main = storage.queryCurrentTime()
+            .map(t -> {
+                System.out.println(t);
+                return t;
+            }).flatMap(f -> commandLog)
+            .map(command -> {
+                // should load current state from storage?
+                var currentState = Utils.fold(Decider.initialState(), events, Decider::evolve);
+                var newEvents = Decider.decide(currentState, command);
+                // save newEvents
+                // verify this is legit?
+                var newState = Utils.fold(Decider.initialState(), events, Decider::evolve);
+                return newEvents;
+            }).flatMap(newEvents -> {
+                events.addAll(newEvents);
+                return storage.saveEvents(newEvents);
             });
-            var newState = Utils.fold(Decider.initialState(), events, Decider::evolve);
-            System.out.println("current State: "  + newState);
-        }
+        main.blockLast(Duration.ofMinutes(1));
 
         System.out.println("final events: " + events);
         System.out.println("calc final state:" + Utils.fold(new Decider.State(0), events, Decider::evolve));
     }
 }
-

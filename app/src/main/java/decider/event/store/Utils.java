@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 public class Utils {
-      // not sure why java streams doesn't have a fold...
-      static <T, S> S fold(S state, List<T> events, BiFunction<S, T, S> evolve) {
+    // not sure why java streams doesn't have a fold...
+    static <T, S> S fold(S state, List<T> events, BiFunction<S, T, S> evolve) {
         if (events.isEmpty()) {
             return state;
         } else {
@@ -14,4 +14,5 @@ public class Utils {
         }
     }
 
+    public enum Unit {UNIT}
 }
