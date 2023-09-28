@@ -1,4 +1,9 @@
 {
   "java.compile.nullAnalysis.mode": "automatic",
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "[java]": {
+    "spotlessGradle.format.enable": true,
+    "spotlessGradle.diagnostics.enable": false,
+    "editor.defaultFormatter": "richardwillis.vscode-spotless-gradle"
+  }
 }
