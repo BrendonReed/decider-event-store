@@ -66,7 +66,7 @@ public class App {
         storage.queryCurrentTime().subscribe(System.out::println);
         storage.saveSandbox().block();
 
-        var events = new ArrayList<Event>();
+        var events = new ArrayList<Event<?>>();
         var timestamp = OffsetDateTime.now();
         var commandLog = List.of(
             new Command<Increment>(timestamp, new Increment(1)),
@@ -89,38 +89,35 @@ public class App {
     }
 
     // aka mutate
-    static List<Event> decide(State state, Command<?> commandWrapper) {
+    static List<Event<?>> decide(State state, Command<?> commandWrapper) {
         var command = commandWrapper.data();
         if (command instanceof Increment i) {
-            return List.of(new IncrementEvent(i.count()));
-        }
-        else if (command instanceof Decrement i) {
-            return List.of(new DecrementEvent(i.count()));
+            return List.of(new Event<>(UUID.randomUUID(), OffsetDateTime.now(), i));
+        } else if (command instanceof Decrement d) {
+            return List.of(new Event<>(UUID.randomUUID(), OffsetDateTime.now(), d));
         }
         throw new UnsupportedOperationException("invalid command");
     }
 
     // aka applicator
-    static State evolve(State currentState, Event event) {
-        if (event instanceof IncrementEvent e) {
-            var newState = new State(currentState.count() + e.amount());
+    static State evolve(State currentState, Event<?> event) {
+        if (event.data() instanceof Increment e) {
+            var newState = new State(currentState.totalCount() + e.amount());
             return newState;
         }
-        else if (event instanceof DecrementEvent e) {
-            var newState = new State(currentState.count() - e.amount());
+        else if (event.data() instanceof Decrement e) {
+            var newState = new State(currentState.totalCount() - e.amount());
             return newState;
         }
         throw new UnsupportedOperationException("invalid event");
     }
 }
 
-interface Event {}
 record Command<T>(OffsetDateTime transactionTime, T data) { }
-record Event2<T>(OffsetDateTime transactionTime, T data) { }
+record Event<T>(UUID id, OffsetDateTime transactionTime, T data) {}
+record EventPersistance(UUID id, OffsetDateTime transactionTime, Json data) { }
 
-record IncrementEvent(long amount) implements Event {}
-record DecrementEvent(long amount) implements Event {}
-record Increment(long count) {}
-record Decrement(long count) {}
+record Increment(long amount) {}
+record Decrement(long amount) {}
 
-record State(long count) {}
+record State(long totalCount) {}
