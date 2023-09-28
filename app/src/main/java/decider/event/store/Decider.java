@@ -40,13 +40,10 @@ public class Decider {
     }
 
     // shared command and event types
-    record Increment(long amount) {
-    }
+    record Increment(long amount) {}
 
-    record Decrement(long amount) {
-    }
+    record Decrement(long amount) {}
 
     // state
-    record State(long totalCount) {
-    }
+    record State(long totalCount) {}
 }

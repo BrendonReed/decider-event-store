@@ -3,7 +3,6 @@ package decider.event.store;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-
 import reactor.core.publisher.Flux;
 
 public class App {
@@ -14,11 +13,7 @@ public class App {
     // do subscription on event log to make view
 
     public static void main(String[] args) {
-        var storage = new Storage("localhost",
-                5402,
-                "postgres",
-                "postgres",
-                "password");
+        var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
 
         var events = new ArrayList<Event<?>>();
         var timestamp = OffsetDateTime.now();
@@ -50,7 +45,8 @@ public class App {
                     // verify this is legit?
                     var newState = Utils.fold(Decider.initialState(), events, Decider::evolve);
                     return newEvents;
-                }).flatMap(newEvents -> {
+                })
+                .flatMap(newEvents -> {
                     events.addAll(newEvents);
                     return storage.saveEvents(newEvents);
                 });

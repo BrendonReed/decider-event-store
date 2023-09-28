@@ -1,21 +1,18 @@
 package decider.event.store;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
+import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.codec.Json;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-
-import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
-import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.postgresql.codec.Json;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -54,7 +51,8 @@ public class Storage {
 
     public Flux<String> queryCurrentTime() {
         var r = connectionFactory.create().flatMapMany(connection -> {
-            return connection.createStatement("select now() transaction_time")
+            return connection
+                    .createStatement("select now() transaction_time")
                     .execute()
                     .flatMap(it -> it.map((row, rowMetadata) -> {
                         return row.get("transaction_time", String.class);
@@ -68,7 +66,8 @@ public class Storage {
         // but in practice, it should be composed in the main reactive flow
         // and subscribed/blocked at the root in one place
         var connection = connectionFactory.create().block();
-        return connection.createStatement("select now() transaction_time")
+        return connection
+                .createStatement("select now() transaction_time")
                 .execute()
                 .flatMap(it -> it.map((row, rowMetadata) -> {
                     return row.get("transaction_time", String.class);
@@ -90,6 +89,5 @@ record EventPersistance(UUID id, OffsetDateTime transactionTime, String eventTyp
             e.printStackTrace();
             throw new UnsupportedOperationException();
         }
-
     }
 }
