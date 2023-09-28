@@ -14,5 +14,7 @@ public class Utils {
         }
     }
 
-    public enum Unit {UNIT}
+    public enum Unit {
+        UNIT
+    }
 }

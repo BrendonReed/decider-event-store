@@ -42,22 +42,22 @@ public class App {
         // 4) saves events
         // 5) maybe calculates next state
         var main = storage.queryCurrentTime()
-            .map(t -> {
-                System.out.println(t);
-                return t;
-            }).flatMap(f -> commandLog)
-            .map(command -> {
-                // should load current state from storage?
-                var currentState = Utils.fold(Decider.initialState(), events, Decider::evolve);
-                var newEvents = Decider.decide(currentState, command);
-                // save newEvents
-                // verify this is legit?
-                var newState = Utils.fold(Decider.initialState(), events, Decider::evolve);
-                return newEvents;
-            }).flatMap(newEvents -> {
-                events.addAll(newEvents);
-                return storage.saveEvents(newEvents);
-            });
+                .map(t -> {
+                    System.out.println(t);
+                    return t;
+                }).flatMap(f -> commandLog)
+                .map(command -> {
+                    // should load current state from storage?
+                    var currentState = Utils.fold(Decider.initialState(), events, Decider::evolve);
+                    var newEvents = Decider.decide(currentState, command);
+                    // save newEvents
+                    // verify this is legit?
+                    var newState = Utils.fold(Decider.initialState(), events, Decider::evolve);
+                    return newEvents;
+                }).flatMap(newEvents -> {
+                    events.addAll(newEvents);
+                    return storage.saveEvents(newEvents);
+                });
         main.blockLast(Duration.ofMinutes(1));
 
         System.out.println("final events: " + events);
