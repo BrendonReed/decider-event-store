@@ -10,8 +10,15 @@ import org.springframework.data.annotation.Id;
 
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.codec.Json;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -32,9 +39,9 @@ class Storage {
             .build());
     }
 
-    public Mono<Sandbox> saveEvent() {
+    public Mono<EventPersistance> saveEvent(EventPersistance event) {
         var template = new R2dbcEntityTemplate(connectionFactory);
-        return template.insert(new Sandbox(UUID.randomUUID(), "payload1"));
+        return template.insert(event);
     }
     public Mono<Sandbox> saveSandbox() {
         var template = new R2dbcEntityTemplate(connectionFactory);
@@ -80,6 +87,9 @@ public class App {
             var newEvents = decide(currentState, command);
             // save newEvents
             events.addAll(newEvents);
+            newEvents.forEach(e -> {
+                storage.saveEvent(EventPersistance.fromEvent(e)).block();
+            });
             var newState = Utils.fold(new State(0), events, App::evolve);
             System.out.println("current State: "  + newState);
         }
@@ -114,8 +124,24 @@ public class App {
 }
 
 record Command<T>(OffsetDateTime transactionTime, T data) { }
-record Event<T>(UUID id, OffsetDateTime transactionTime, T data) {}
-record EventPersistance(UUID id, OffsetDateTime transactionTime, Json data) { }
+record Event<T>(UUID id, OffsetDateTime transactionTime, T data) { }
+record EventPersistance(UUID id, OffsetDateTime transactionTime, String eventType, Json payload) { 
+    public static EventPersistance fromEvent(Event<?> event) {
+        ObjectMapper objectMapper = JsonMapper.builder().build();
+        final ObjectWriter w = objectMapper.writer();
+        try {
+            byte[] json = w.writeValueAsBytes(event.data());
+            var asx = Json.of(json);
+            var eventType = event.data().getClass().getName(); 
+            return new EventPersistance(event.id(), event.transactionTime(), eventType, asx);
+        } catch (JsonProcessingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            throw new UnsupportedOperationException();
+        }
+
+    }
+}
 
 record Increment(long amount) {}
 record Decrement(long amount) {}
