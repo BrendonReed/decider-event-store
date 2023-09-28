@@ -41,11 +41,7 @@ public class App {
         // 3) checks state after new events for validity
         // 4) saves events
         // 5) maybe calculates next state
-        var main = storage.queryCurrentTime()
-                .map(t -> {
-                    System.out.println(t);
-                    return t;
-                }).flatMap(f -> commandLog)
+        var main = commandLog
                 .map(command -> {
                     // should load current state from storage?
                     var currentState = Utils.fold(Decider.initialState(), events, Decider::evolve);
