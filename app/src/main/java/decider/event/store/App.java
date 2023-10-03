@@ -25,6 +25,7 @@ public class App {
         // 3) validates against system state if needed, like uniqueness (impure)
         // 4) enhances data with context like time, caller data, maybe system data
         // 5) writes to command log
+        var streamId = UUID.randomUUID();
         var commandLog = Flux.just(
                 new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(1)),
                 new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(1)),
@@ -53,16 +54,16 @@ public class App {
                 })
                 .flatMap(newEvents -> {
                     events.addAll(newEvents);
-                    return storage.saveEvents(newEvents);
+                    return storage.saveEvents(newEvents, streamId);
                 });
-        // main.blockLast(Duration.ofMinutes(1));
-        var listener = storage.registerListener("foo_channel").map(x -> {
-            System.out.println(x);
-            System.out.println(x.getName());
-            System.out.println(x.getParameter());
-            return x;
-        });
-        listener.blockLast(Duration.ofMinutes(5));
+        main.blockLast(Duration.ofMinutes(1));
+        // var listener = storage.registerListener("foo_channel").map(x -> {
+        //     System.out.println(x);
+        //     System.out.println(x.getName());
+        //     System.out.println(x.getParameter());
+        //     return x;
+        // });
+        // listener.blockLast(Duration.ofMinutes(5));
 
         System.out.println("final events: " + events);
         System.out.println("calc final state:" + Utils.fold(new Decider.State(0), events, Decider::evolve));

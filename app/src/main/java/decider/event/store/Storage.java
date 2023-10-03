@@ -50,14 +50,14 @@ public class Storage {
         return template.insert(event);
     }
 
-    public Mono<Event<?>> saveEvent(Event<?> event) {
+    public Mono<Event<?>> saveEvent(Event<?> event, UUID streamId) {
         var template = new R2dbcEntityTemplate(connectionFactory);
-        var ep = EventPersistance.fromEvent(event);
+        var ep = EventPersistance.fromEvent(event, streamId);
         return template.insert(ep).map(i -> event);
     }
 
-    public Flux<Event<?>> saveEvents(List<Event<?>> events) {
-        var r = Flux.fromIterable(events).flatMap(this::saveEvent);
+    public Flux<Event<?>> saveEvents(List<Event<?>> events, UUID streamId) {
+            var r = Flux.fromIterable(events).flatMap(x -> this.saveEvent(x, streamId));
         return r;
     }
 
@@ -87,15 +87,15 @@ public class Storage {
     }
 }
 
-record EventPersistance(UUID id, OffsetDateTime transactionTime, String eventType, Json payload) {
-    public static EventPersistance fromEvent(Event<?> event) {
+record EventPersistance(UUID streamId, OffsetDateTime transactionTime, String eventType, Json payload) {
+    public static EventPersistance fromEvent(Event<?> event, UUID streamId) {
         ObjectMapper objectMapper = JsonMapper.builder().build();
         final ObjectWriter w = objectMapper.writer();
         try {
             byte[] json = w.writeValueAsBytes(event.data());
             var asx = Json.of(json);
             var eventType = event.data().getClass().getName();
-            return new EventPersistance(UUID.randomUUID(), event.transactionTime(), eventType, asx);
+            return new EventPersistance(streamId, event.transactionTime(), eventType, asx);
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
