@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.api.Notification;
+import io.r2dbc.postgresql.api.PostgresqlResult;
 import io.r2dbc.postgresql.codec.Json;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -31,6 +33,16 @@ public class Storage {
                 .database(database) // optional
                 .options(options) // optional
                 .build());
+    }
+
+    public Flux<Notification> registerListener(String channel) {
+        return connectionFactory.create().flatMapMany(receiver -> {
+            var listen = receiver.createStatement("LISTEN " + channel)
+                    .execute()
+                    .flatMap(PostgresqlResult::getRowsUpdated)
+                    .thenMany(receiver.getNotifications());
+            return listen;
+        });
     }
 
     public Mono<EventPersistance> saveEvent(EventPersistance event) {

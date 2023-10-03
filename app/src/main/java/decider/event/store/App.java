@@ -55,7 +55,14 @@ public class App {
                     events.addAll(newEvents);
                     return storage.saveEvents(newEvents);
                 });
-        main.blockLast(Duration.ofMinutes(1));
+        // main.blockLast(Duration.ofMinutes(1));
+        var listener = storage.registerListener("foo_channel").map(x -> {
+            System.out.println(x);
+            System.out.println(x.getName());
+            System.out.println(x.getParameter());
+            return x;
+        });
+        listener.blockLast(Duration.ofMinutes(5));
 
         System.out.println("final events: " + events);
         System.out.println("calc final state:" + Utils.fold(new Decider.State(0), events, Decider::evolve));
