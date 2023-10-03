@@ -3,6 +3,7 @@ package decider.event.store;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.UUID;
 import reactor.core.publisher.Flux;
 
 public class App {
@@ -25,17 +26,21 @@ public class App {
         // 4) enhances data with context like time, caller data, maybe system data
         // 5) writes to command log
         var commandLog = Flux.just(
-                new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
-                new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
-                new Command<Decider.Increment>(timestamp, new Decider.Increment(1)),
-                new Command<Decider.Decrement>(timestamp, new Decider.Decrement(1)));
+                new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(1)),
+                new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(1)),
+                new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(1)),
+                new Command<Decider.Decrement>(timestamp, UUID.randomUUID(), new Decider.Decrement(1)));
 
         // command processor:
         // 1) listens for commands on command log
         // 2) processes command
-        // 3) checks state after new events for validity
-        // 4) saves events
-        // 5) maybe calculates next state
+        // 3) saves command in processed command lo
+        // .   stores pointer into command log
+        // .   success/failure
+        // .   pointer into event log for most recent event after processing
+        // 4) checks state after new events for validity
+        // 5) saves events
+        // 6) maybe calculates next state
         var main = commandLog
                 .map(command -> {
                     // should load current state from storage?
