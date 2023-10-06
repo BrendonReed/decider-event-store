@@ -3,6 +3,7 @@ package decider.event.store;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.UUID;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -19,7 +20,10 @@ public class App {
 
         var events = new ArrayList<Event<?>>();
         var timestamp = OffsetDateTime.now();
+        Scanner in = new Scanner(System.in);
 
+        String s = in.nextLine();
+        System.out.println("You entered string " + s);
         // command generator:
         // 1) listens for mutations
         // 2) validates command structure (pure functions)
@@ -32,7 +36,13 @@ public class App {
                 new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(1)),
                 new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(1)),
                 new Command<Decider.Decrement>(timestamp, UUID.randomUUID(), new Decider.Decrement(1)));
-
+        Flux<Integer> cliInput = Flux.generate(() -> 0, (state, sink) -> {
+            String y = in.nextLine();
+            Integer asInt = Integer.parseInt(y);
+            sink.next(asInt);
+            if (state == 10) sink.complete();
+            return state + asInt;
+        });
         // command processor:
         // 1) listens for commands on command log
         // 2) processes command
@@ -43,7 +53,11 @@ public class App {
         // 4) checks state after new events for validity
         // 5) saves events
         // 6) maybe calculates next state
-        var main = commandLog
+        var main = cliInput
+                .map(i -> {
+                    var a = new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(i));
+                    return a;
+                })
                 .map(command -> {
                     // should load current state from storage?
                     var currentState = Utils.fold(Decider.initialState(), events, Decider::evolve);

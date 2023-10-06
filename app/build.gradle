@@ -95,3 +95,7 @@ spotless {
 		greclipse()
 	}
 }
+
+run {
+    standardInput = System.in
+}
