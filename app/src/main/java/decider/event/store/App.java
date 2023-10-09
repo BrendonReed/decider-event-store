@@ -1,12 +1,12 @@
 package decider.event.store;
 
+import decider.event.store.Decider.CounterState;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.UUID;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 public class App {
 
@@ -17,6 +17,20 @@ public class App {
 
     public static void main(String[] args) {
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
+
+        var listener = storage.registerListener("foo_channel").map(x -> {
+            var currentState = new CounterState(99);
+            storage.saveState(currentState).subscribe();
+            System.out.println(x);
+            System.out.println(x.getName());
+            System.out.println(x.getParameter());
+            return x;
+        });
+
+        System.out.println("starting");
+        // listener.subscribeOn(Schedulers.parallel());
+        listener.subscribe();
+        System.out.println("subscribed to pg listener");
 
         var events = new ArrayList<Event<?>>();
         var timestamp = OffsetDateTime.now();
@@ -70,16 +84,7 @@ public class App {
             main.blockLast(Duration.ofMinutes(1));
         }
 
-        // listen on background task, not sure this works right
-        var listener = storage.registerListener("foo_channel").map(x -> {
-            System.out.println(x);
-            System.out.println(x.getName());
-            System.out.println(x.getParameter());
-            return x;
-        });
-        listener.subscribeOn(Schedulers.parallel()).blockLast(Duration.ofMinutes(5));
-
         System.out.println("final events: " + events);
-        System.out.println("calc final state:" + Utils.fold(new Decider.State(0), events, Decider::evolve));
+        System.out.println("calc final state:" + Utils.fold(new Decider.CounterState(0), events, Decider::evolve));
     }
 }

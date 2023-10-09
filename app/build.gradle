@@ -97,5 +97,5 @@ spotless {
 }
 
 run {
-    standardInput = System.in
+	standardInput = System.in
 }

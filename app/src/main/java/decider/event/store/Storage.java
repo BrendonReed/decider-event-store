@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import decider.event.store.Decider.CounterState;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
@@ -50,6 +51,11 @@ public class Storage {
         return template.insert(event);
     }
 
+    public Mono<CounterState> saveState(CounterState state) {
+        var template = new R2dbcEntityTemplate(connectionFactory);
+        return template.insert(state);
+    }
+
     public Mono<Event<?>> saveEvent(Event<?> event, UUID streamId) {
         var template = new R2dbcEntityTemplate(connectionFactory);
         var ep = EventPersistance.fromEvent(event, streamId);
@@ -57,9 +63,14 @@ public class Storage {
     }
 
     public Flux<Event<?>> saveEvents(List<Event<?>> events, UUID streamId) {
-            var r = Flux.fromIterable(events).flatMap(x -> this.saveEvent(x, streamId));
+        var r = Flux.fromIterable(events).flatMap(x -> this.saveEvent(x, streamId));
         return r;
     }
+
+    // public Flux<Event<?>> getEvents(UUID streamId) {
+    //     var template = new R2dbcEntityTemplate(connectionFactory);
+    //     Flux<EventPersistance> loaded = template.select(EventPersistance.class).all();
+    // }
 
     public Flux<String> queryCurrentTime() {
         var r = connectionFactory.create().flatMapMany(connection -> {
