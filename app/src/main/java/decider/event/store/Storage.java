@@ -75,12 +75,6 @@ public class Storage {
         return loaded;
     }
 
-    public Flux<Event<?>> getEvents(UUID streamId) {
-        var template = new R2dbcEntityTemplate(connectionFactory);
-        Flux<EventPersistance> loaded = template.select(EventPersistance.class).all();
-        return loaded.map(EventPersistance::toEvent);
-    }
-
     public Flux<String> queryCurrentTime() {
         var r = connectionFactory.create().flatMapMany(connection -> {
             return connection
@@ -116,26 +110,6 @@ record EventPersistance(UUID streamId, Instant transactionTime, String eventType
             var asx = Json.of(json);
             var eventType = event.data().getClass().getName();
             return new EventPersistance(streamId, event.transactionTime(), eventType, asx);
-        } catch (JsonProcessingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    public static Event<?> toEvent(EventPersistance event) {
-        ObjectMapper objectMapper = JsonMapper.builder().build();
-        try {
-            switch (event.eventType) {
-                case "decider.event.store.Decider$Increment": 
-                    var increment = objectMapper.readValue(event.payload().asString(), Increment.class);
-                    return new Event<Increment>(event.transactionTime, increment);
-                case "decider.event.store.Decider$Decrement": 
-                    var decrement = objectMapper.readValue(event.payload().asString(), Decrement.class);
-                    return new Event<Decrement>(event.transactionTime, decrement);
-                default: 
-                    throw new UnsupportedOperationException();
-            }
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

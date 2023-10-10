@@ -1,5 +1,10 @@
 package decider.event.store;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.r2dbc.postgresql.codec.Json;
+import java.time.Instant;
 import java.util.List;
 
 // Domain functions, indpendent per stream
@@ -37,6 +42,27 @@ public class Decider {
 
     static CounterState initialState() {
         return new CounterState(0);
+    }
+
+    static Event<?> deserializeEvent(String eventType, Instant transactionTime, Json jsonPayload) {
+
+        ObjectMapper objectMapper = JsonMapper.builder().build();
+        try {
+            switch (eventType) {
+                case "decider.event.store.Decider$Increment":
+                    var increment = objectMapper.readValue(jsonPayload.asString(), Increment.class);
+                    return new Event<Increment>(transactionTime, increment);
+                case "decider.event.store.Decider$Decrement":
+                    var decrement = objectMapper.readValue(jsonPayload.asString(), Decrement.class);
+                    return new Event<Decrement>(transactionTime, decrement);
+                default:
+                    throw new UnsupportedOperationException();
+            }
+        } catch (JsonProcessingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            throw new UnsupportedOperationException();
+        }
     }
 
     // shared command and event types

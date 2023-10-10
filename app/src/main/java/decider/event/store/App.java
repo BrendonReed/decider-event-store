@@ -17,9 +17,12 @@ public class App {
 
     public static void main(String[] args) {
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
-        var eventsRaw = storage.getEvents(UUID.fromString("0024195c-ff40-4c98-9fe1-1380c14199d8"));
-        eventsRaw.map(e -> { System.out.println(e); return e;}).blockLast();
-        System.out.println("currentState: " + Utils.fold(Decider.initialState(), eventsRaw.toStream().toList(), Decider::evolve));
+        var eventsRaw = storage.getEventsRaw(UUID.fromString("0024195c-ff40-4c98-9fe1-1380c14199d8"));
+        var asEvents = eventsRaw.map(ep -> {
+            return Decider.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
+        });
+        System.out.println("currentState: "
+                + Utils.fold(Decider.initialState(), asEvents.toStream().toList(), Decider::evolve));
 
         var listener = storage.registerListener("foo_channel").map(x -> {
             var currentState = new CounterState(99);
