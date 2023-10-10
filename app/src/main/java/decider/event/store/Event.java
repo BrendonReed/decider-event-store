@@ -1,5 +1,5 @@
 package decider.event.store;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
-record Event<T>(OffsetDateTime transactionTime, T data) {}
+record Event<T>(Instant transactionTime, T data) {}

@@ -2,7 +2,7 @@ package decider.event.store;
 
 import decider.event.store.Decider.CounterState;
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.UUID;
@@ -17,6 +17,9 @@ public class App {
 
     public static void main(String[] args) {
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
+        var eventsRaw = storage.getEvents(UUID.fromString("0024195c-ff40-4c98-9fe1-1380c14199d8"));
+        eventsRaw.map(e -> { System.out.println(e); return e;}).blockLast();
+        System.out.println("currentState: " + Utils.fold(Decider.initialState(), eventsRaw.toStream().toList(), Decider::evolve));
 
         var listener = storage.registerListener("foo_channel").map(x -> {
             var currentState = new CounterState(99);
@@ -33,7 +36,7 @@ public class App {
         System.out.println("subscribed to pg listener");
 
         var events = new ArrayList<Event<?>>();
-        var timestamp = OffsetDateTime.now();
+        var timestamp = Instant.now();
         try (Scanner in = new Scanner(System.in)) {
             // command generator:
             // 1) listens for mutations
