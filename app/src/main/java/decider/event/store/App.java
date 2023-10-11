@@ -1,6 +1,5 @@
 package decider.event.store;
 
-import decider.event.store.Decider.CounterState;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ public class App {
 
     public static void main(String[] args) {
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
-        var eventsRaw = storage.getEventsRaw(UUID.fromString("0024195c-ff40-4c98-9fe1-1380c14199d8"));
+        var eventsRaw = storage.getEventsForStream(UUID.fromString("0024195c-ff40-4c98-9fe1-1380c14199d8"));
         var asEvents = eventsRaw.map(ep -> {
             return Decider.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
         });
@@ -25,7 +24,7 @@ public class App {
                 + Utils.fold(Decider.initialState(), asEvents.toStream().toList(), Decider::evolve));
 
         var listener = storage.registerListener("foo_channel").map(x -> {
-            var currentState = new CounterState(99);
+            var currentState = Decider.initialState();
             storage.saveState(currentState).subscribe();
             System.out.println(x);
             System.out.println(x.getName());

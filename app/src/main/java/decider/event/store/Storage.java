@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import decider.event.store.Decider.CounterState;
-import decider.event.store.Decider.Decrement;
-import decider.event.store.Decider.Increment;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
@@ -18,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import static org.springframework.data.relational.core.query.Criteria.*;
+import static org.springframework.data.relational.core.query.Query.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -69,10 +69,12 @@ public class Storage {
         return r;
     }
 
-    public Flux<EventPersistance> getEventsRaw(UUID streamId) {
+    public Flux<EventPersistance> getEventsForStream(UUID streamId) {
         var template = new R2dbcEntityTemplate(connectionFactory);
-        Flux<EventPersistance> loaded = template.select(EventPersistance.class).all();
-        return loaded;
+        return template.select(EventPersistance.class)
+                .from("event_persistance")
+                .matching(query(where("stream_id").is(streamId)))
+                .all();
     }
 
     public Flux<String> queryCurrentTime() {
