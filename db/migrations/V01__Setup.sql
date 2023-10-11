@@ -13,4 +13,17 @@ create table event_persistance (
 create table counter_state (
   total_count bigint,
   revision bigint
-)
+);
+
+create function send_notification() returns trigger as 
+$$
+begin
+  perform pg_notify('event_updated', row_to_json(new)::TEXT);
+  return null;
+end;
+$$ lANGUAGE plpgsql;
+
+create trigger notify_table_updated 
+  after insert or update on event_persistance
+  for each row
+  execute function send_notification();

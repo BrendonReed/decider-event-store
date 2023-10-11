@@ -16,20 +16,19 @@ public class App {
 
     public static void main(String[] args) {
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
-        var eventsRaw = storage.getEventsForStream(UUID.fromString("0024195c-ff40-4c98-9fe1-1380c14199d8"));
-        var asEvents = eventsRaw.map(ep -> {
-            return Decider.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
-        });
-        System.out.println("currentState: "
-                + Utils.fold(Decider.initialState(), asEvents.toStream().toList(), Decider::evolve));
 
-        var listener = storage.registerListener("foo_channel").map(x -> {
-            var currentState = Decider.initialState();
-            storage.saveState(currentState).subscribe();
-            System.out.println(x);
-            System.out.println(x.getName());
-            System.out.println(x.getParameter());
-            return x;
+        var listener = storage.registerListener("event_updated").flatMap(x -> {
+            String streamId = Utils.unsafeExtract(x.getParameter());
+            return storage.getEventsForStream(UUID.fromString(streamId))
+                    .map(ep -> {
+                        return Decider.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
+                    })
+                    .reduce(Decider.initialState(), Decider::evolve)
+                    .map(s -> {
+                        System.out.println("materialized state: " + s);
+                        return s;
+                    });
+            // return asEvents;
         });
 
         System.out.println("starting");
