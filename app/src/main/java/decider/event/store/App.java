@@ -19,6 +19,7 @@ public class App {
 
         var listener = storage.registerListener("event_updated").flatMap(x -> {
             String streamId = Utils.unsafeExtract(x.getParameter());
+            // get stored events, materialize a view and store it
             return storage.getEventsForStream(UUID.fromString(streamId))
                     .map(ep -> {
                         return Decider.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
@@ -27,8 +28,8 @@ public class App {
                     .map(s -> {
                         System.out.println("materialized state: " + s);
                         return s;
-                    });
-            // return asEvents;
+                    })
+                    .flatMap(storage::saveState);
         });
 
         System.out.println("starting");
