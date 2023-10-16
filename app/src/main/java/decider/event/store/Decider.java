@@ -6,8 +6,11 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.r2dbc.postgresql.codec.Json;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
-// Domain functions, indpendent per stream
+import org.springframework.data.annotation.Id;
+
+// Domain functions, independent per stream
 // in this case, a super simple counter domain
 // all pure functions, easily testable
 public class Decider {
@@ -27,10 +30,10 @@ public class Decider {
     // aka applicator
     static CounterState evolve(CounterState currentState, Event<?> event) {
         if (event.data() instanceof Increment e) {
-            var newState = new CounterState(currentState.totalCount() + e.amount());
+            var newState = new CounterState(currentState.id, currentState.totalCount() + e.amount());
             return newState;
         } else if (event.data() instanceof Decrement e) {
-            var newState = new CounterState(currentState.totalCount() - e.amount());
+            var newState = new CounterState(currentState.id, currentState.totalCount() - e.amount());
             return newState;
         }
         throw new UnsupportedOperationException("invalid event");
@@ -40,8 +43,8 @@ public class Decider {
         return false;
     }
 
-    static CounterState initialState() {
-        return new CounterState(0);
+    static CounterState initialState(UUID id) {
+        return new CounterState(id, 0);
     }
 
     static Event<?> deserializeEvent(String eventType, Instant transactionTime, Json jsonPayload) {
@@ -71,5 +74,5 @@ public class Decider {
     record Decrement(long amount) {}
 
     // state
-    record CounterState(long totalCount) {}
+    record CounterState(@Id UUID id, long totalCount) {}
 }

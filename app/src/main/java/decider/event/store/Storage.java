@@ -55,7 +55,7 @@ public class Storage {
 
     public Mono<CounterState> saveState(CounterState state) {
         var template = new R2dbcEntityTemplate(connectionFactory);
-        return template.insert(state);
+        return template.update(state);
     }
 
     public Mono<Event<?>> saveEvent(Event<?> event, UUID streamId) {

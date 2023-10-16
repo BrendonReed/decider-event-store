@@ -17,19 +17,12 @@ public class App {
     public static void main(String[] args) {
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
 
+        var materializer = new EventMaterializer(storage);
+
         var listener = storage.registerListener("event_updated").flatMap(x -> {
             String streamId = Utils.unsafeExtract(x.getParameter());
             // get stored events, materialize a view and store it
-            return storage.getEventsForStream(UUID.fromString(streamId))
-                    .map(ep -> {
-                        return Decider.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
-                    })
-                    .reduce(Decider.initialState(), Decider::evolve)
-                    .map(s -> {
-                        System.out.println("materialized state: " + s);
-                        return s;
-                    })
-                    .flatMap(storage::saveState);
+            return materializer.materialize(streamId, null);
         });
 
         System.out.println("starting");
@@ -39,6 +32,7 @@ public class App {
 
         var events = new ArrayList<Event<?>>();
         var timestamp = Instant.now();
+        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
         try (Scanner in = new Scanner(System.in)) {
             // command generator:
             // 1) listens for mutations
@@ -46,7 +40,6 @@ public class App {
             // 3) validates against system state if needed, like uniqueness (impure)
             // 4) enhances data with context like time, caller data, maybe system data
             // 5) writes to command log
-            var streamId = UUID.randomUUID();
             // command generator
             // listens for input
             // validates
@@ -63,6 +56,7 @@ public class App {
                 sink.next(command);
                 return state + asInt;
             });
+
             // command processor:
             // 1) listens for commands on command log
             // 2) processes command
@@ -75,11 +69,11 @@ public class App {
             // 6) maybe calculates next state
             var main = cliInput.map(command -> {
                         // should load current state from storage?
-                        var currentState = Utils.fold(Decider.initialState(), events, Decider::evolve);
+                        var currentState = Utils.fold(Decider.initialState(streamId), events, Decider::evolve);
                         var newEvents = Decider.decide(currentState, command);
                         // save newEvents
                         // verify this is legit?
-                        var newState = Utils.fold(Decider.initialState(), events, Decider::evolve);
+                        var newState = Utils.fold(Decider.initialState(streamId), events, Decider::evolve);
                         return newEvents;
                     })
                     .flatMap(newEvents -> {
@@ -90,6 +84,6 @@ public class App {
         }
 
         System.out.println("final events: " + events);
-        System.out.println("calc final state:" + Utils.fold(new Decider.CounterState(0), events, Decider::evolve));
+        System.out.println("calc final state:" + Utils.fold(new Decider.CounterState(streamId, 0), events, Decider::evolve));
     }
 }
