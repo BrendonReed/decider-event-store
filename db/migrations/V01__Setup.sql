@@ -13,6 +13,7 @@ create table event_persistance (
 create table counter_checkpoint (
   event_id bigint
 );
+insert into counter_checkpoint (event_id) values (0);
 
 create table counter_state (
   id uuid,

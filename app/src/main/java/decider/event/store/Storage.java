@@ -1,5 +1,8 @@
 package decider.event.store;
 
+import static org.springframework.data.relational.core.query.Criteria.*;
+import static org.springframework.data.relational.core.query.Query.*;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -16,8 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
-import static org.springframework.data.relational.core.query.Criteria.*;
-import static org.springframework.data.relational.core.query.Query.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -56,6 +57,11 @@ public class Storage {
     public Mono<CounterState> saveState(CounterState state) {
         var template = new R2dbcEntityTemplate(connectionFactory);
         return template.update(state);
+    }
+
+    public Mono<CounterState> getState() {
+        var template = new R2dbcEntityTemplate(connectionFactory);
+        return template.select(CounterState.class).from("counter_state").first();
     }
 
     public Mono<Event<?>> saveEvent(Event<?> event, UUID streamId) {
