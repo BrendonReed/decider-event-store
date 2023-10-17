@@ -15,6 +15,7 @@ public class App {
     // do subscription on event log to make view
 
     public static void main(String[] args) {
+        System.out.println("starting");
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
 
         var materializer = new EventMaterializer(storage);
@@ -22,10 +23,9 @@ public class App {
         var listener = storage.registerListener("event_updated").flatMap(x -> {
             String streamId = Utils.unsafeExtract(x.getParameter());
             // get stored events, materialize a view and store it
-            return materializer.materialize(streamId, null);
+            return materializer.next();
         });
 
-        System.out.println("starting");
         // listener.subscribeOn(Schedulers.parallel());
         listener.subscribe();
         System.out.println("subscribed to pg listener");

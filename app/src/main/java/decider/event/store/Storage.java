@@ -83,6 +83,14 @@ public class Storage {
                 .all();
     }
 
+    public Flux<EventPersistance> getLatestEvents(Long latestEvent) {
+        var template = new R2dbcEntityTemplate(connectionFactory);
+        return template.select(EventPersistance.class)
+                .from("event_persistance")
+                .matching(query(where("event_id").greaterThan(latestEvent)))
+                .all();
+    }
+
     public Flux<String> queryCurrentTime() {
         var r = connectionFactory.create().flatMapMany(connection -> {
             return connection
@@ -109,7 +117,7 @@ public class Storage {
     }
 }
 
-record EventPersistance(UUID streamId, Instant transactionTime, String eventType, Json payload) {
+record EventPersistance(Long eventId, UUID streamId, Instant transactionTime, String eventType, Json payload) {
     public static EventPersistance fromEvent(Event<?> event, UUID streamId) {
         ObjectMapper objectMapper = JsonMapper.builder().build();
         final ObjectWriter w = objectMapper.writer();
@@ -117,7 +125,7 @@ record EventPersistance(UUID streamId, Instant transactionTime, String eventType
             byte[] json = w.writeValueAsBytes(event.data());
             var asx = Json.of(json);
             var eventType = event.data().getClass().getName();
-            return new EventPersistance(streamId, event.transactionTime(), eventType, asx);
+            return new EventPersistance(null, streamId, event.transactionTime(), eventType, asx);
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
