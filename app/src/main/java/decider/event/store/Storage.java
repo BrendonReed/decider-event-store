@@ -54,16 +54,6 @@ public class Storage {
         return template.insert(event);
     }
 
-    public Mono<CounterState> saveState(CounterState state) {
-        var template = new R2dbcEntityTemplate(connectionFactory);
-        return template.update(state);
-    }
-
-    public Mono<CounterState> getState() {
-        var template = new R2dbcEntityTemplate(connectionFactory);
-        return template.select(CounterState.class).from("counter_state").first();
-    }
-
     public Mono<Event<?>> saveEvent(Event<?> event, UUID streamId) {
         var template = new R2dbcEntityTemplate(connectionFactory);
         var ep = EventPersistance.fromEvent(event, streamId);
