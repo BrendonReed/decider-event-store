@@ -1,12 +1,11 @@
 package decider.event.store;
 
+import decider.event.store.Decider.CounterState;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.UUID;
-
-import decider.event.store.Decider.CounterState;
 import reactor.core.publisher.Flux;
 
 public class App {
@@ -26,7 +25,7 @@ public class App {
         var listener = storage.registerListener("event_updated").flatMap(x -> {
             String eventStreamId = Utils.unsafeExtract(x.getParameter());
             // get stored events, materialize a view and store it
-            return materializer.nextG(Decider::evolve);
+            return materializer.next(Decider::evolve);
         });
 
         // listener.subscribeOn(Schedulers.parallel());
@@ -86,6 +85,7 @@ public class App {
         }
 
         System.out.println("final events: " + events);
-        System.out.println("calc final state:" + Utils.fold(new Decider.CounterState(streamId, 0), events, Decider::evolve));
+        System.out.println(
+                "calc final state:" + Utils.fold(new Decider.CounterState(streamId, 0), events, Decider::evolve));
     }
 }

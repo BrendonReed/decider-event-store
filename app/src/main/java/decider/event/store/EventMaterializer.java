@@ -2,7 +2,7 @@ package decider.event.store;
 
 import java.util.function.BiFunction;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
-import reactor.core.publisher.Flux;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 public class EventMaterializer<A> {
@@ -16,11 +16,11 @@ public class EventMaterializer<A> {
     public EventMaterializer(Storage storage, A initialState) {
         this.storage = storage;
         this.checkpoint = 0L;
-        this.stateG = initialState;
+        this.state = initialState;
     }
 
     public Long checkpoint;
-    public A stateG;
+    public A state;
 
     // in a loop -
     // find next event - checkpoint.event_id + 1
@@ -28,25 +28,20 @@ public class EventMaterializer<A> {
     // save new state
     // update checkpoints
 
-    public Mono<A> nextG(BiFunction<A, ? super Event<?>, A> accumulator) {
+    @Transactional
+    public Mono<A> next(BiFunction<A, ? super Event<?>, A> accumulator) {
         // TODO: setting checkpoint and saving state should be transactional
         System.out.println("materializing from: " + checkpoint);
         return storage.getLatestEvents(checkpoint)
                 .map(ep -> {
                     checkpoint = ep.eventId();
-                    return Decider.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
+                    return Storage.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
                 })
-                .reduce(this.stateG, accumulator)
+                .reduce(this.state, accumulator)
                 .flatMap(s -> {
-                    this.stateG = s;
+                    this.state = s;
                     var template = new R2dbcEntityTemplate(storage.connectionFactory);
                     return template.update(s);
                 });
-    }
-
-    public <A> Mono<A> materializeG(
-            A previousState, Flux<Event<?>> events, BiFunction<A, ? super Event<?>, A> accumulator) {
-        var nextState = events.reduce(previousState, accumulator);
-        return nextState;
     }
 }

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import decider.event.store.Decider.CounterState;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
@@ -104,6 +103,23 @@ public class Storage {
                 .flatMap(it -> it.map((row, rowMetadata) -> {
                     return row.get("transaction_time", String.class);
                 }));
+    }
+
+    static Event<?> deserializeEvent(String eventType, Instant transactionTime, Json jsonPayload) {
+
+        ObjectMapper objectMapper = JsonMapper.builder().build();
+        try {
+            var data = objectMapper.readValue(jsonPayload.asString(), Class.forName(eventType));
+            return new Event<>(transactionTime, data);
+        } catch (JsonProcessingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            throw new UnsupportedOperationException();
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return null;
     }
 }
 

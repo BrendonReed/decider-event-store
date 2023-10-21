@@ -5,25 +5,24 @@ package decider.event.store;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
-import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.postgresql.codec.Json;
-
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import org.junit.jupiter.api.Test;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-
 import decider.event.store.Decider.Increment;
+import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
+import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.codec.Json;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
 class DbSandbox {
 
+    @Disabled
     @Test
     public void DbQuery() {
         Map<String, String> options = new HashMap<>();
@@ -51,6 +50,11 @@ class DbSandbox {
     }
 }
 
+/*
+ * This isn't really a test, just more like a place to try things out.
+ * Useful for development, but could be a maintenance burden to keep around after
+ * things are figured out.
+ */
 class Sandbox {
     @Test
     public void deserializeEvent() {
@@ -74,9 +78,8 @@ class Sandbox {
             e.printStackTrace();
         }
 
-        var e = Decider.deserializeEvent(className, Instant.now(), jsonPayload);
+        var e = Storage.deserializeEvent(className, Instant.now(), jsonPayload);
         System.out.println("and event: " + e);
-
     }
 }
 
