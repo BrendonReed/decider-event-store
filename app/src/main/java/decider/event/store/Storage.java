@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 
 public class Storage {
 
-    private PostgresqlConnectionFactory connectionFactory;
+    public PostgresqlConnectionFactory connectionFactory;
 
     public Storage(String host, int port, String database, String username, String password) {
         Map<String, String> options = new HashMap<>();

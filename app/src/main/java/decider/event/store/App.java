@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.UUID;
+
+import decider.event.store.Decider.CounterState;
 import reactor.core.publisher.Flux;
 
 public class App {
@@ -16,14 +18,15 @@ public class App {
 
     public static void main(String[] args) {
         System.out.println("starting");
+        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
         var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
 
-        var materializer = new EventMaterializer(storage);
+        var materializer = new EventMaterializer<CounterState>(storage, Decider.initialState(streamId));
 
         var listener = storage.registerListener("event_updated").flatMap(x -> {
-            String streamId = Utils.unsafeExtract(x.getParameter());
+            String eventStreamId = Utils.unsafeExtract(x.getParameter());
             // get stored events, materialize a view and store it
-            return materializer.next();
+            return materializer.nextG(Decider::evolve);
         });
 
         // listener.subscribeOn(Schedulers.parallel());
@@ -32,7 +35,6 @@ public class App {
 
         var events = new ArrayList<Event<?>>();
         var timestamp = Instant.now();
-        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
         try (Scanner in = new Scanner(System.in)) {
             // command generator:
             // 1) listens for mutations
