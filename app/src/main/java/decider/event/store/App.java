@@ -61,7 +61,7 @@ public class App {
             // command processor:
             // 1) listens for commands on command log
             // 2) processes command
-            // 3) saves command in processed command lo
+            // 3) saves command in processed command log
             // .   stores pointer into command log
             // .   success/failure
             // .   pointer into event log for most recent event after processing

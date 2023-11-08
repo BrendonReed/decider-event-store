@@ -10,6 +10,18 @@ create table event_persistance (
   -- correlation_id uuid not null
 );
 
+create table command_log (
+  id uuid,
+  command jsonb not null,
+  transaction_time timestamp not null,
+
+)
+
+create table processed_commands (
+  command_id uuid,
+  event_id
+)
+
 create table counter_checkpoint (
   event_id bigint
 );

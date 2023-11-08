@@ -109,6 +109,9 @@ public class Storage {
 
         ObjectMapper objectMapper = JsonMapper.builder().build();
         try {
+            // TODO: for event versioning future preparation, this should
+            // probably do explicit weak typed mapping. Not sure if Jackson has
+            // some support for that...
             var data = objectMapper.readValue(jsonPayload.asString(), Class.forName(eventType));
             return new Event<>(transactionTime, data);
         } catch (JsonProcessingException e) {

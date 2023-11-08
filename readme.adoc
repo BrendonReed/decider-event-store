@@ -1,0 +1,19 @@
+= About
+
+This is a simple event sourcing + command sourcing demo storing events + state in postgresql.
+
+== Next
+
+. Persist commands with envelope for storing success/failure.
+. Command processor reading from command log 
+. Event materializer in another process
+. GraphQL based interface instead of CLI
+. Show concurrency scenario - course subscription + course capacity change
+. Show read after write consistency
+
+== More fun domains?
+
+. Airport security line capacity planner.
+. Pet feeder
+. Games
+
