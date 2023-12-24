@@ -1,0 +1,3 @@
+logging:
+  level:
+    decider.event.store: INFO

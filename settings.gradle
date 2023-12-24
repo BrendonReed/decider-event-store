@@ -11,4 +11,7 @@ plugins {
 }
 
 rootProject.name = 'decider-event-store'
+//include('lib')
 include('app')
+//include('event-materializer')
+//include('command-processor')

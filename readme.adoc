@@ -2,10 +2,53 @@
 
 This is a simple event sourcing + command sourcing demo storing events + state in postgresql.
 
+== Findings
+
+Working, but kinda slow. The commands have to run sequentially, which slows it down a lot. On my kinda old macbook air, it'll do ~100 commands/second.
+
+The test above were by just inserting thousands of commands very quickly. A more realistic scenario is 30-100 commands per second.
+
+There's some subtlety with the infinite stream of commands. It polls every few seconds, which doesn't make great responsiveness. When doing that, it's important for the process to be idempotent because if it ever re-queries before finishing processing, it'll attempt to process duplicate commands. A critical aspect is making the processing idempotent and then dropping on backpressure. It's ok to drop on backpressure because anything dropped will be picked up on subsequent batches. Otherwise there's too much reprocessing and it builds up and makes things much slower.
+
+Currently it combines a subscription to inserts on the command table, which gives good responsiveness because there's never waiting for the next tick of the poll, and then a backup of polling on a timer because events from the subscription could easily be dropped.
+
+|===
+ | producing | rec   | min     |   max     |         avg          
+ |  26/s     | 40/1  | 58.921  | 2208.157  | 705.0411804788213628
+ |  30/s     | 40/1  | 72.494  | 2031.042  | 677.8377385620915033
+ |  31/s     | 40/1  | 86.723  | 4762.440  | 917.7154387197501952
+ |  38/s     | 40/1  | 121.574 | 26304.842 | 1914.7898217252396166
+ |  34/s     | 40/1  | 121.667 | 12537.795 | 6050.9490127450980392
+ |  35/s     | 40/1  | 264.961 | 4103.454  | 1973.4900639312977099
+ |  35/s     | 40/1  | 112.746 | 2960.667  | 1142.4446253547776727
+ |  40/s     | 50/1  | 103.696 | 7439.603  | 2085.2439571428571429
+ |  41/s     | 60/1  | 101.606 | 1895.471  | 801.9012775974025974
+ |  45/s     | 100/1 | 90.906 | 3659.492   | 1426.9193988312636961
+ |  44/s     | 90/1  | 74.817 | 1627.079   | 795.2656878306878307
+ |  49/s     | 90/1  | 87.183 | 5201.989   | 2604.6169866932801065
+ |  54/s     | 70/1  | 180.808 | 9989.678  | 5075.1158156626506024
+ |  47/s     | 60/1  | 164.615 | 2113.948 | 919.0800580912863071
+ |  57/s     | 60/1  | 255.834 | 3383.243 | 1687.9262895033860045
+ |  52/s     | 80/1  | 11.208 | 2394.477 | 909.6988007268322229
+ |  47/s     | 100/1 | 10.761 | 2383.833 | 835.9341738241308793
+ |  48/s     | 100/1 | 6.250 | 2081.161 | 627.6955295275590551
+ |  31/s     | 100/1 | 5.908 | 1398.201 | 631.6736340425531915
+ |  36/s     | 500/2 | 12.494 | 3643.400 | 956.7807465940054496
+ |  36/s     | 200/2 | 9.953 | 2225.399 | 874.6725957446808511
+ |  54/s     | 100/1 | 8.448 | 2253.680 | 1066.3831091224018476
+
+|===
+
+== Tests that need written
+
+. [ ] retrying when database connection drops (network blip)
+. [ ] transaction on appending events and processed commands. Failure on any should rollback anything already done.
+. [ ] a failing command, so a domain with a business rule like numbers can only be odd.
+
 == Next
 
+
 . Persist commands with envelope for storing success/failure.
-. Command processor reading from command log 
 . Event materializer in another process
 . GraphQL based interface instead of CLI
 . Show concurrency scenario - course subscription + course capacity change

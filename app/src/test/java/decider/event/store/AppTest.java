@@ -10,22 +10,38 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import decider.event.store.Decider.Increment;
+import decider.event.store.CounterDecider.Increment;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.api.PostgresqlConnection;
+import io.r2dbc.postgresql.api.PostgresqlResult;
 import io.r2dbc.postgresql.codec.Json;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
+
+class Sequence {
+    private Long counter;
+
+    public Sequence() {
+        counter = 0L;
+    }
+
+    public Long get() {
+        counter = counter + 1;
+        return counter;
+    }
+}
 
 class DbSandbox {
 
-    @Disabled
-    @Test
-    public void DbQuery() {
+    PostgresqlConnectionFactory connectionFactory() {
+
         Map<String, String> options = new HashMap<>();
         options.put("lock_timeout", "10s");
 
@@ -38,7 +54,13 @@ class DbSandbox {
                         .database("postgres") // optional
                         .options(options) // optional
                         .build());
-        var connection = connectionFactory.create().block();
+        return connectionFactory;
+    }
+
+    @Disabled
+    @Test
+    public void DbQuery() {
+        var connection = connectionFactory().create().block();
         connection
                 .createStatement("select now() transaction_time")
                 .execute()
@@ -49,6 +71,39 @@ class DbSandbox {
                 .expectNext("read uncommitted")
                 .verifyComplete();
     }
+
+    private static Flux<PostgresqlResult> insertRows(PostgresqlConnection connection, Sequence seq, int rowsToInsert) {
+        var sql = "INSERT INTO command_log (request_id, command_type, command) "
+                + "values('%s', 'decider.event.store.CounterDecider$Increment', "
+                + "('%s')::jsonb)";
+
+        return Flux.range(1, rowsToInsert).flatMapSequential(i -> {
+            return connection
+                    .createStatement(String.format(sql, UUID.randomUUID(), "{\"amount\": " + seq.get() + "}"))
+                    .execute();
+        });
+    }
+
+    @Test
+    public void GenerateCommands() {
+        var cf = connectionFactory();
+        var connection = cf.create().block();
+        var seq = new Sequence();
+        Random random = new Random();
+        // random to be more like real life and to have a wider range of burst
+        // int rowsToInsert = random.nextInt(91) + 10; // Generate random rows between 10 and 80
+        // or constant for less variability
+        var rowsToInsert = 20;
+        for (int i = 1; i < 30; i++) { // Change the iteration limit as needed
+            try {
+                Thread.sleep(1000);
+                insertRows(connection, seq, rowsToInsert).blockLast();
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } // Sleep for one second (handle InterruptedException)
+        }
+    }
 }
 
 /*
@@ -57,6 +112,7 @@ class DbSandbox {
  * things are figured out.
  */
 record EventV2(Long amount, Long amount2) {}
+
 class Sandbox {
     @Test
     public void weakTypeDeserialize() {
@@ -79,8 +135,9 @@ class Sandbox {
             // TODO Auto-generated catch block
             System.out.println("JsonProcessingException");
             e.printStackTrace();
-        } 
+        }
     }
+
     @Test
     public void deserializeEvent() {
         var className = "decider.event.store.Decider$Decrement";
@@ -103,7 +160,7 @@ class Sandbox {
             e.printStackTrace();
         }
 
-        var e = Storage.deserializeEvent(className, Instant.now(), jsonPayload);
+        var e = Storage.deserializeEvent(className, jsonPayload);
         System.out.println("and event: " + e);
     }
 }

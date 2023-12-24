@@ -1,7 +1,6 @@
 package decider.event.store;
 
 import java.util.function.BiFunction;
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
@@ -35,13 +34,12 @@ public class EventMaterializer<A> {
         return storage.getLatestEvents(checkpoint)
                 .map(ep -> {
                     checkpoint = ep.eventId();
-                    return Storage.deserializeEvent(ep.eventType(), ep.transactionTime(), ep.payload());
+                    return Storage.deserializeEvent(ep.eventType(), ep.payload());
                 })
                 .reduce(this.state, accumulator)
                 .flatMap(s -> {
                     this.state = s;
-                    var template = new R2dbcEntityTemplate(storage.connectionFactory);
-                    return template.update(s);
+                    return storage.template.update(s);
                 });
     }
 }

@@ -1,36 +1,70 @@
 package decider.event.store;
 
-import decider.event.store.Decider.CounterState;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Profile;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import reactor.core.publisher.Flux;
 
-public class App {
+@SpringBootApplication
+@EnableTransactionManagement
+@Slf4j
+@Profile("!test")
+public class App implements CommandLineRunner {
 
     // create decider function (mutate): state -> command -> event list
     // create evolve function (apply): state -> event -> state
     // save in postgres
     // do subscription on event log to make view
+    @Autowired
+    private Storage storage;
+
+    @Autowired
+    private PubSubConnection pubSubConnection;
+
+    @Autowired
+    private CommandProcessor commandProcessor;
 
     public static void main(String[] args) {
-        System.out.println("starting");
+        SpringApplication.run(App.class, args);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+
+        var decider = new CounterDecider();
+        var run = commandProcessor.process(decider);
+        run.blockLast(Duration.ofMinutes(15));
+    }
+
+    public void eventMaterializer() {
         var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
-        var storage = new Storage("localhost", 5402, "postgres", "postgres", "password");
 
-        var materializer = new EventMaterializer<CounterState>(storage, Decider.initialState(streamId));
+        var decider = new CounterDecider();
+        var materializer = new EventMaterializer<CounterState>(storage, decider.initialState(streamId));
 
-        var listener = storage.registerListener("event_updated").flatMap(x -> {
+        var listener = pubSubConnection.registerListener("event_updated").flatMap(x -> {
             String eventStreamId = Utils.unsafeExtract(x.getParameter());
             // get stored events, materialize a view and store it
-            return materializer.next(Decider::evolve);
+            return materializer.next(decider::apply);
         });
-
         // listener.subscribeOn(Schedulers.parallel());
         listener.subscribe();
-        System.out.println("subscribed to pg listener");
+        log.debug("subscribed to pg listener");
+    }
+
+    public void cliInput() {
+        log.info("starting");
+        var decider = new CounterDecider();
+        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
 
         var events = new ArrayList<Event<?>>();
         var timestamp = Instant.now();
@@ -51,41 +85,13 @@ public class App {
                 String y = in.nextLine();
                 Integer asInt = Integer.parseInt(y); // validates
                 var command = asInt >= 0
-                        ? new Command<Decider.Increment>(timestamp, UUID.randomUUID(), new Decider.Increment(asInt))
-                        : new Command<Decider.Decrement>(timestamp, UUID.randomUUID(), new Decider.Decrement(-asInt));
+                        ? new Command<CounterDecider.Increment>(UUID.randomUUID(), new CounterDecider.Increment(asInt))
+                        : new Command<CounterDecider.Decrement>(
+                                UUID.randomUUID(), new CounterDecider.Decrement(-asInt));
 
                 sink.next(command);
                 return state + asInt;
             });
-
-            // command processor:
-            // 1) listens for commands on command log
-            // 2) processes command
-            // 3) saves command in processed command log
-            // .   stores pointer into command log
-            // .   success/failure
-            // .   pointer into event log for most recent event after processing
-            // 4) checks state after new events for validity
-            // 5) saves events
-            // 6) maybe calculates next state
-            var main = cliInput.map(command -> {
-                        // should load current state from storage?
-                        var currentState = Utils.fold(Decider.initialState(streamId), events, Decider::evolve);
-                        var newEvents = Decider.decide(currentState, command);
-                        // save newEvents
-                        // verify this is legit?
-                        var newState = Utils.fold(Decider.initialState(streamId), events, Decider::evolve);
-                        return newEvents;
-                    })
-                    .flatMap(newEvents -> {
-                        events.addAll(newEvents);
-                        return storage.saveEvents(newEvents, streamId);
-                    });
-            main.blockLast(Duration.ofMinutes(1));
         }
-
-        System.out.println("final events: " + events);
-        System.out.println(
-                "calc final state:" + Utils.fold(new Decider.CounterState(streamId, 0), events, Decider::evolve));
     }
 }

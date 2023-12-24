@@ -11,6 +11,8 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
 	// Apply the application plugin to add support for building a CLI application in Java.
 	id 'application'
+	id 'org.springframework.boot' version '3.2.0'
+	id 'io.spring.dependency-management' version '1.1.4'
 	id "com.diffplug.spotless" version "6.21.0"
 }
 
@@ -20,20 +22,23 @@ repositories {
 }
 
 dependencies {
-	// Use JUnit Jupiter for testing.
-	testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
+	testImplementation 'org.flywaydb:flyway-core:10.4.1'
+	testImplementation 'org.flywaydb:flyway-database-postgresql:10.4.1'
 
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-	// This dependency is used by the application.
-	implementation 'com.google.guava:guava:32.1.1-jre'
-
-	implementation 'org.postgresql:r2dbc-postgresql:1.0.2.RELEASE'
-	implementation 'io.projectreactor:reactor-core:3.5.10'
-	implementation 'org.springframework.data:spring-data-r2dbc:3.1.4'
-	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-
-	testImplementation 'io.projectreactor:reactor-test:3.5.10'
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.postgresql:postgresql'
+	implementation 'org.postgresql:r2dbc-postgresql'
+	implementation 'io.projectreactor:reactor-core'
+	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+	implementation 'org.springframework.boot:spring-boot-starter-json'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -96,6 +101,16 @@ spotless {
 	}
 }
 
+//enable pattern matching on types
+tasks.withType(JavaCompile) {
+	options.compilerArgs.addAll([
+		'--enable-preview',
+		'--release',
+		'17'
+	])
+}
+
 run {
 	standardInput = System.in
+	jvmArgs(['--enable-preview'])
 }
