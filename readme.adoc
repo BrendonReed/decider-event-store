@@ -39,6 +39,10 @@ Currently it combines a subscription to inserts on the command table, which give
 
 |===
 
+too ~34 minutes to do 100,000 commands. 
+
+With dummy data for startup, too 30 seconds to startup with 1 million events.
+
 == Tests that need written
 
 . [ ] retrying when database connection drops (network blip)

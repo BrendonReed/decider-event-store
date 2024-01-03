@@ -10,6 +10,17 @@ import java.util.UUID;
 public class CounterDecider implements Decider<CounterState> {
 
     @Override
+    public MutationResult mutate2(CounterState state, Command<?> commandWrapper) {
+        var command = commandWrapper.data();
+        if (command instanceof Increment i) {
+            return new MutationResult.Success(List.of(new Event<>(i)));
+        } else if (command instanceof Decrement d) {
+            return new MutationResult.Success(List.of(new Event<>(d)));
+        }
+        throw new UnsupportedOperationException("invalid command");
+    }
+
+    @Override
     public List<Event<?>> mutate(CounterState state, Command<?> commandWrapper) {
         var command = commandWrapper.data();
         if (command instanceof Increment i) {

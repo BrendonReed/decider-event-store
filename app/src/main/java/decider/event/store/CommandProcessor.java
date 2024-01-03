@@ -1,5 +1,7 @@
 package decider.event.store;
 
+import decider.event.store.MutationResult.Failure;
+import decider.event.store.MutationResult.Success;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -9,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
-record StateAndEvents<T>(T state, List<Event<?>> newEvents) {}
+record DecisionResult<T>(T state, List<Event<?>> newEvents, String commandDisposition) {}
 
 @Slf4j
 @Component
@@ -32,9 +34,6 @@ public class CommandProcessor {
             var event = Storage.toEvent(eventP);
             return decider.apply(s, event);
         });
-        Instant end = Instant.now();
-        Duration duration = Duration.between(start, end);
-        log.info("Finished loading initial state in: {} milliseconds.", duration.toMillis());
 
         // command processor:
         // 1) listens for commands on command log
@@ -55,30 +54,49 @@ public class CommandProcessor {
 
         var listener = pubSubConnection.registerListener("command_logged");
         Flux<CommandPersistance> allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);
-        var run = initialState.flatMapMany(state -> {
-            log.info("initial state: {}", state);
+        var run = initialState
+                .doOnTerminate(() -> {
+                    Instant end = Instant.now();
+                    Duration duration = Duration.between(start, end);
+                    log.info("Finished loading initial state in: {} milliseconds.", duration.toMillis());
+                })
+                .flatMapMany(state -> {
+                    log.info("initial state: {}", state);
 
-            var startState = new StateAndEvents<T>(state, new ArrayList<Event<?>>());
-            var states = allCommands
-                    .scan(startState, (acc, commandDto) -> {
-                        var command = Storage.deserializeCommand(
-                                commandDto.commandType(), commandDto.requestId(), commandDto.command());
-                        var newEvents = decider.mutate(acc.state(), command);
-                        var newState = Utils.fold(acc.state(), newEvents, decider::apply);
-                        log.debug("current state: {}", newState);
-                        return new StateAndEvents<T>(newState, newEvents);
-                    })
-                    .skip(1); // skip because scan emits for the inital state, which we don't want to process
-            var eventLog = Flux.zip(allCommands, states).concatMap(tuple -> {
-                var newEvents = tuple.getT2().newEvents();
-                var commandDto = tuple.getT1();
-                return storage.save(commandDto, newEvents, streamId)
-                        .map(pc -> tuple.getT2().state());
-                // var firstEvent = newEvents.get(0);
-                // return storage.saveOneEvent(commandDto, firstEvent, streamId);
-            });
-            return eventLog;
-        });
+                    var startState = new DecisionResult<T>(state, new ArrayList<Event<?>>(), null);
+                    var states = allCommands
+                            .scan(startState, (acc, commandDto) -> {
+                                var command = Storage.deserializeCommand(
+                                        commandDto.commandType(), commandDto.requestId(), commandDto.command());
+                                // could throw an IllegalStateException if this command violates business rules.
+                                var result = decider.mutate2(acc.state(), command);
+                                if (result instanceof Success success) {
+                                    var newState = Utils.fold(acc.state(), success.events(), decider::apply);
+                                    log.debug("current state: {}", newState);
+                                    return new DecisionResult<T>(newState, success.events(), "Success");
+                                } else if (result instanceof Failure f) {
+                                    log.debug("caught business rule failure: {}", f.message());
+                                    return new DecisionResult<T>(acc.state(), new ArrayList<Event<?>>(), "Failure");
+                                } else {
+                                    return new DecisionResult<T>(acc.state(), new ArrayList<Event<?>>(), "Failure");
+                                }
+                            })
+                            .skip(1); // skip because scan emits for the inital state, which we don't want to process
+                    var eventLog = Flux.zip(allCommands, states).concatMap(tuple -> {
+                        // options -
+                        // . different save call for failure, pulling event_id on demand?
+                        // . use scan to track previous command?
+                        var newEvents = tuple.getT2().newEvents();
+                        var commandDto = tuple.getT1();
+                        var disposition = tuple.getT2().commandDisposition();
+                        return disposition == "Success"
+                                ? storage.save(commandDto, newEvents, streamId)
+                                        .map(pc -> tuple.getT2().state())
+                                : storage.saveFailedCommand(commandDto)
+                                        .map(pc -> tuple.getT2().state());
+                    });
+                    return eventLog;
+                });
         return run;
     }
 }

@@ -42,7 +42,7 @@ public class App implements CommandLineRunner {
 
         var decider = new CounterDecider();
         var run = commandProcessor.process(decider);
-        run.blockLast(Duration.ofMinutes(15));
+        run.blockLast(Duration.ofMinutes(400));
     }
 
     public void eventMaterializer() {

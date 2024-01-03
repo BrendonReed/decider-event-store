@@ -113,11 +113,28 @@ public class Storage {
         }));
     }
 
+    public Mono<ProcessedCommand> saveFailedCommand(CommandPersistance command) {
+        return getLatestEventId().flatMap(eventId -> {
+            var pc = new ProcessedCommand(command.id(), eventId, "failure");
+            return template.insert(pc);
+        });
+    }
+
     public Flux<EventPersistance> getLatestEvents(Long latestEvent) {
         return template.select(EventPersistance.class)
                 .from("event_persistance")
                 .matching(query(where("event_id").greaterThan(latestEvent)))
                 .all();
+    }
+
+    public Mono<Long> getLatestEventId() {
+        var sql = "select max(event_id) max_event_id from event_persistance";
+        return template.getDatabaseClient()
+                .sql(sql)
+                .map(row -> {
+                    return row.get("max_event_id", Long.class);
+                })
+                .one();
     }
 
     public Flux<LocalDateTime> queryCurrentTime() {

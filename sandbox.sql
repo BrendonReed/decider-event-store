@@ -84,7 +84,7 @@ SELECT
     uuid_generate_v4(),
     'decider.event.store.CounterDecider$Increment',
     ('{"amount": ' || generate_series || '}')::jsonb
-FROM generate_series(1, 1000);
+FROM generate_series(1, 1000000);
 
 select uuid_generate_v4() command_id, generate_series id
 FROM generate_series(1, 10);

@@ -9,6 +9,8 @@ import java.util.UUID;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,8 +50,8 @@ public class TransactionTest {
         registry.add("spring.r2dbc.password", postgresContainer::getPassword);
     }
 
-    @BeforeAll
-    public static void runFlywayMigrations() {
+    @BeforeEach
+    public void runFlywayMigrations() {
         // postgresContainer.start(); // Ensure the container is started explicitly
 
         // Obtain the base directory of the project
@@ -62,8 +64,10 @@ public class TransactionTest {
                         postgresContainer.getJdbcUrl(),
                         postgresContainer.getUsername(),
                         postgresContainer.getPassword())
-                .locations("filesystem:" + baseDir + "/" + relativePath);
+                .locations("filesystem:" + baseDir + "/" + relativePath)
+                .cleanDisabled(false);
         var flyway = flywayConfig.load();
+        flyway.clean();
         flyway.migrate();
     }
 
@@ -101,6 +105,34 @@ public class TransactionTest {
                 .assertNext(lastState -> {
                     assertThat(lastState.totalCount()).isEqualTo(expected);
                 })
+                .verifyComplete();
+    }
+
+    @Test
+    void FailsBusinessRule() throws JsonProcessingException {
+        var commands = Flux.just(
+                new AddingDecider.GetDiff(1),
+                // state is 1
+                new AddingDecider.GetDiff(4)
+                // state is 5
+                );
+        var runCommands = commands.flatMapSequential(command -> {
+            return storage.insertCommand(UUID.randomUUID(), command);
+        });
+
+        var insertDuration =
+                runCommands.as(StepVerifier::create).expectNextCount(2).verifyComplete();
+        System.out.println("insert duration " + insertDuration);
+
+        var commandProcessor = new CommandProcessor(storage, pubSubConnection);
+        var decider = new AddingDecider();
+        commandProcessor
+                .process(decider)
+                .take(1)
+                .as(StepVerifier::create)
+                .assertNext(nextState -> 
+                    assertThat(nextState).isEqualTo(1))
+                //.assertNext(lastState -> assertThat(lastState).isEqualTo(4))
                 .verifyComplete();
     }
 }
