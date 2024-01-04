@@ -73,7 +73,7 @@ public class CommandProcessor {
                                     log.debug("current state: {}", newEvents);
                                     return new DecisionResult<T>(newState, newEvents, "Success");
                                 } catch (RuntimeException e) {
-                                        log.debug("caught business rule failure: {}", e.getLocalizedMessage());
+                                    log.debug("caught business rule failure: {}", e.getLocalizedMessage());
                                     return new DecisionResult<T>(acc.state(), new ArrayList<Event<?>>(), "Failure");
                                 }
                             })

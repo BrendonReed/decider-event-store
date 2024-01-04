@@ -30,8 +30,7 @@ public class AddingDecider implements Decider<Integer> {
         }
         if (nextState % 2 != 1) {
             throw new IllegalStateException("Business rule violation! State must always be odd.");
-        }
-        else {
+        } else {
             return nextState;
         }
     }
