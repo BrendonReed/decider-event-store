@@ -10,20 +10,6 @@ public class AddingDecider implements Decider<Integer> {
     // events
     record DiffEvent(Integer amount) {}
 
-    @Override
-    public MutationResult mutate2(Integer state, Command<?> commandWrapper) {
-        var command = commandWrapper.data();
-        if (command instanceof GetDiff i) {
-            var diff = i.toMatch - state;
-            var newState = state + diff;
-            // must be odd
-            if (newState % 2 != 1) {
-                return new MutationResult.Failure("Business rule violation! State must always be odd.");
-            }
-            return new MutationResult.Success(List.of(new Event<>(new DiffEvent(diff))));
-        }
-        throw new UnsupportedOperationException("Invalid command");
-    }
     // business rule: must always be odd.
     // generates an event that must be added to the current state to equal command
     @Override

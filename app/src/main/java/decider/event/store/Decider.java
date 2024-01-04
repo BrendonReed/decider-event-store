@@ -8,8 +8,6 @@ public interface Decider<S> {
     // aka mutator
     public List<Event<?>> mutate(S state, Command<?> commandWrapper);
 
-    public MutationResult mutate2(S state, Command<?> commandWrapper);
-
     // aka applicator
     public S apply(S currentState, Event<?> event);
 

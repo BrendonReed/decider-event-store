@@ -8,9 +8,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -130,9 +128,8 @@ public class TransactionTest {
                 .process(decider)
                 .take(1)
                 .as(StepVerifier::create)
-                .assertNext(nextState -> 
-                    assertThat(nextState).isEqualTo(1))
-                //.assertNext(lastState -> assertThat(lastState).isEqualTo(4))
+                .assertNext(nextState -> assertThat(nextState).isEqualTo(1))
+                // .assertNext(lastState -> assertThat(lastState).isEqualTo(4))
                 .verifyComplete();
     }
 }

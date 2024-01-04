@@ -167,8 +167,20 @@ class Sandbox {
 
 class AppTest {
     @Test
-    void appHasAGreeting() {
-        App classUnderTest = new App();
-        assertNotNull(classUnderTest, "app should have a greeting");
+    void catchInScan() {
+        Flux<Integer> source = Flux.just(1, 2, 3, 4);
+
+        source.scan((acc, value) -> {
+                    try {
+                        if (value == 3) {
+                            throw new RuntimeException("Exception occurred at value 3");
+                        }
+                        return acc + value;
+                    } catch (RuntimeException e) {
+                        // Handle the exception and return a default value to continue
+                        return acc + 0; // Return a default value (0 in this case)
+                    }
+                })
+                .subscribe(System.out::println, throwable -> System.err.println("Error: " + throwable.getMessage()));
     }
 }

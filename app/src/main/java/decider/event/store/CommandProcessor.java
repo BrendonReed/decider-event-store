@@ -1,7 +1,5 @@
 package decider.event.store;
 
-import decider.event.store.MutationResult.Failure;
-import decider.event.store.MutationResult.Success;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -69,15 +67,13 @@ public class CommandProcessor {
                                 var command = Storage.deserializeCommand(
                                         commandDto.commandType(), commandDto.requestId(), commandDto.command());
                                 // could throw an IllegalStateException if this command violates business rules.
-                                var result = decider.mutate2(acc.state(), command);
-                                if (result instanceof Success success) {
-                                    var newState = Utils.fold(acc.state(), success.events(), decider::apply);
-                                    log.debug("current state: {}", newState);
-                                    return new DecisionResult<T>(newState, success.events(), "Success");
-                                } else if (result instanceof Failure f) {
-                                    log.debug("caught business rule failure: {}", f.message());
-                                    return new DecisionResult<T>(acc.state(), new ArrayList<Event<?>>(), "Failure");
-                                } else {
+                                try {
+                                    var newEvents = decider.mutate(acc.state(), command);
+                                    var newState = Utils.fold(acc.state(), newEvents, decider::apply);
+                                    log.debug("current state: {}", newEvents);
+                                    return new DecisionResult<T>(newState, newEvents, "Success");
+                                } catch (RuntimeException e) {
+                                        log.debug("caught business rule failure: {}", e.getLocalizedMessage());
                                     return new DecisionResult<T>(acc.state(), new ArrayList<Event<?>>(), "Failure");
                                 }
                             })
