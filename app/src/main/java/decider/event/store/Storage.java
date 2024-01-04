@@ -36,14 +36,14 @@ public class Storage {
         this.objectMapper = objectMapper;
     }
 
-    public Mono<EventPersistance> saveEvent(Event<?> event, UUID streamId) {
-        var ep = EventPersistance.fromEvent(event, streamId);
+    public Mono<EventLog> saveEvent(Event<?> event, UUID streamId) {
+        var ep = EventLog.fromEvent(event, streamId);
         return template.insert(ep);
     }
 
-    public Flux<EventPersistance> getEventsForStream(UUID streamId) {
-        return template.select(EventPersistance.class)
-                .from("event_persistance")
+    public Flux<EventLog> getEventsForStream(UUID streamId) {
+        return template.select(EventLog.class)
+                .from("event_log")
                 .matching(query(where("stream_id").is(streamId)))
                 .all();
     }
@@ -122,15 +122,15 @@ public class Storage {
         });
     }
 
-    public Flux<EventPersistance> getLatestEvents(Long latestEvent) {
-        return template.select(EventPersistance.class)
-                .from("event_persistance")
+    public Flux<EventLog> getLatestEvents(Long latestEvent) {
+        return template.select(EventLog.class)
+                .from("event_log")
                 .matching(query(where("event_id").greaterThan(latestEvent)))
                 .all();
     }
 
     public Mono<Long> getLatestEventId() {
-        var sql = "select max(event_id) max_event_id from event_persistance";
+        var sql = "select max(event_id) max_event_id from event_log";
         return template.getDatabaseClient()
                 .sql(sql)
                 .map(row -> {
@@ -164,7 +164,7 @@ public class Storage {
         }
     }
 
-    static Event<?> toEvent(EventPersistance ep) {
+    static Event<?> toEvent(EventLog ep) {
         return deserializeEvent(ep.eventType(), ep.payload());
     }
 
@@ -209,15 +209,15 @@ public class Storage {
     }
 }
 
-record EventPersistance(@Id Long eventId, UUID streamId, String eventType, Json payload) {
-    public static EventPersistance fromEvent(Event<?> event, UUID streamId) {
+record EventLog(@Id Long eventId, UUID streamId, String eventType, Json payload) {
+    public static EventLog fromEvent(Event<?> event, UUID streamId) {
         ObjectMapper objectMapper = JsonMapper.builder().build();
         final ObjectWriter w = objectMapper.writer();
         try {
             byte[] json = w.writeValueAsBytes(event.data());
             var asx = Json.of(json);
             var eventType = event.data().getClass().getName();
-            return new EventPersistance(null, streamId, eventType, asx);
+            return new EventLog(null, streamId, eventType, asx);
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -226,7 +226,6 @@ record EventPersistance(@Id Long eventId, UUID streamId, String eventType, Json 
     }
 }
 
-@Table("command_log")
 record CommandLog(@Id Long id, UUID requestId, String commandType, Json command) {}
 
 record ProcessedCommand(Long commandId, Long eventId, String disposition) {}

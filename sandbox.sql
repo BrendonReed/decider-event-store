@@ -3,11 +3,11 @@
 
 select now();
 
-delete from event_persistance;
+delete from event_log;
 
 select * from counter_state;
 
-select * from event_persistance
+select * from event_log
 order by event_id;
 
 delete from counter_state;
@@ -53,11 +53,11 @@ order by command_log.id desc
 
 select count(*) from command_log;
 select count(*) from processed_command;
-select count(*) from event_persistance;
+select count(*) from event_log;
 
 select * from command_log order by id;
 select * from processed_command order by command_id;
-select * from event_persistance order by event_id;
+select * from event_log order by event_id;
 
 select now()
 
@@ -68,13 +68,13 @@ select c.id, c.transaction_time command_time, pc.transaction_time processed_time
 ,((pc.transaction_time - c.transaction_time)) time_to_process2
 from command_log c
 join processed_command pc on c.id = pc.command_id
-join event_persistance e on e.event_id = pc.event_id
+join event_log e on e.event_id = pc.event_id
 ) processing_times;
 
 select min(transaction_time), max(transaction_time), max(transaction_time) - min(transaction_time) d, count(*), count(*) / extract (second from (max(transaction_time) - min(transaction_time)))
 from command_log c;
 
-truncate event_persistance;
+truncate event_log;
 truncate processed_command;
 truncate command_log;
 
