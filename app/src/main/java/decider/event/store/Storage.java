@@ -48,7 +48,7 @@ public class Storage {
                 .all();
     }
 
-    public Flux<CommandPersistance> getCommands(int batchSize) {
+    public Flux<CommandLog> getCommands(int batchSize) {
         var sql =
                 """
             select command_log.*
@@ -64,13 +64,13 @@ public class Storage {
                 .sql(sql)
                 .bind("batchSize", batchSize)
                 .map((row, metadata) -> {
-                    CommandPersistance command = template.getConverter().read(CommandPersistance.class, row, metadata);
+                    CommandLog command = template.getConverter().read(CommandLog.class, row, metadata);
                     return command;
                 })
                 .all();
     }
 
-    public Flux<CommandPersistance> getInifiteStreamOfUnprocessedCommands(Flux<Notification> sub) {
+    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands(Flux<Notification> sub) {
 
         var batchSize = 100;
         var pollingInterval = Duration.ofSeconds(2);
@@ -90,7 +90,7 @@ public class Storage {
 
     // TODO: add test to make sure the transaction works.
     @Transactional
-    public Mono<ProcessedCommand> save(CommandPersistance command, List<Event<?>> events, UUID streamId) {
+    public Mono<ProcessedCommand> save(CommandLog command, List<Event<?>> events, UUID streamId) {
         // because of the way stream is processed, it's possible to have duplicates
         // so it's important that this process is idempotent, so if the command
         // has already been processed, then just skip it.
@@ -115,7 +115,7 @@ public class Storage {
         }));
     }
 
-    public Mono<ProcessedCommand> saveFailedCommand(CommandPersistance command) {
+    public Mono<ProcessedCommand> saveFailedCommand(CommandLog command) {
         return getLatestEventId().flatMap(eventId -> {
             var pc = new ProcessedCommand(command.id(), eventId, "failure");
             return template.insert(pc);
@@ -149,13 +149,13 @@ public class Storage {
                 .all();
     }
 
-    public <T> Mono<CommandPersistance> insertCommand(UUID requestId, T payload) {
+    public <T> Mono<CommandLog> insertCommand(UUID requestId, T payload) {
         final ObjectWriter w = objectMapper.writer();
         try {
             byte[] json = w.writeValueAsBytes(payload);
             var commandType = payload.getClass().getName();
             var commandJson = Json.of(json);
-            var cp = new CommandPersistance(null, requestId, commandType, commandJson);
+            var cp = new CommandLog(null, requestId, commandType, commandJson);
             return template.insert(cp);
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
@@ -227,6 +227,6 @@ record EventPersistance(@Id Long eventId, UUID streamId, String eventType, Json 
 }
 
 @Table("command_log")
-record CommandPersistance(@Id Long id, UUID requestId, String commandType, Json command) {}
+record CommandLog(@Id Long id, UUID requestId, String commandType, Json command) {}
 
 record ProcessedCommand(Long commandId, Long eventId, String disposition) {}

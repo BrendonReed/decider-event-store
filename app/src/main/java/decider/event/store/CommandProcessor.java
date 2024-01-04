@@ -51,7 +51,7 @@ public class CommandProcessor {
         // .  the event should also not be saved
 
         var listener = pubSubConnection.registerListener("command_logged");
-        Flux<CommandPersistance> allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);
+        Flux<CommandLog> allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);
         var run = initialState
                 .doOnTerminate(() -> {
                     Instant end = Instant.now();
