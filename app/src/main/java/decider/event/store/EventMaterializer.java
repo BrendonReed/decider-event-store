@@ -33,7 +33,7 @@ public class EventMaterializer<A> {
         System.out.println("materializing from: " + checkpoint);
         return storage.getLatestEvents(checkpoint)
                 .map(ep -> {
-                    checkpoint = ep.eventId();
+                    checkpoint = ep.id();
                     return Storage.deserializeEvent(ep.eventType(), ep.payload());
                 })
                 .reduce(this.state, accumulator)

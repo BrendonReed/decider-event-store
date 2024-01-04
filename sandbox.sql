@@ -8,7 +8,7 @@ delete from event_log;
 select * from counter_state;
 
 select * from event_log
-order by event_id;
+order by id;
 
 delete from counter_state;
 
@@ -57,7 +57,7 @@ select count(*) from event_log;
 
 select * from command_log order by id;
 select * from processed_command order by command_id;
-select * from event_log order by event_id;
+select * from event_log order by id;
 
 select now()
 
@@ -68,7 +68,7 @@ select c.id, c.transaction_time command_time, pc.transaction_time processed_time
 ,((pc.transaction_time - c.transaction_time)) time_to_process2
 from command_log c
 join processed_command pc on c.id = pc.command_id
-join event_log e on e.event_id = pc.event_id
+join event_log e on e.id = pc.event_log_id
 ) processing_times;
 
 select min(transaction_time), max(transaction_time), max(transaction_time) - min(transaction_time) d, count(*), count(*) / extract (second from (max(transaction_time) - min(transaction_time)))
@@ -84,7 +84,7 @@ SELECT
     uuid_generate_v4(),
     'decider.event.store.CounterDecider$Increment',
     ('{"amount": ' || generate_series || '}')::jsonb
-FROM generate_series(1, 1000000);
+FROM generate_series(1, 100);
 
 select uuid_generate_v4() command_id, generate_series id
 FROM generate_series(1, 10);

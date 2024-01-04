@@ -102,14 +102,14 @@ public class Storage {
                 .flatMapSequential(event -> saveEvent(event, streamId))
                 .map(e -> e)
                 .reduce((maxObject, nextObject) -> {
-                    if (nextObject.eventId() > maxObject.eventId()) {
+                    if (nextObject.id() > maxObject.id()) {
                         return nextObject;
                     } else {
                         return maxObject;
                     }
                 });
         return existing.switchIfEmpty(saveEvents.flatMap(maxEvent -> {
-            var pc = new ProcessedCommand(command.id(), maxEvent.eventId(), "success");
+            var pc = new ProcessedCommand(command.id(), maxEvent.id(), "success");
             return template.insert(pc);
         }));
     }
@@ -124,16 +124,16 @@ public class Storage {
     public Flux<EventLog> getLatestEvents(Long latestEvent) {
         return template.select(EventLog.class)
                 .from("event_log")
-                .matching(query(where("event_id").greaterThan(latestEvent)))
+                .matching(query(where("id").greaterThan(latestEvent)))
                 .all();
     }
 
     public Mono<Long> getLatestEventId() {
-        var sql = "select max(event_id) max_event_id from event_log";
+        var sql = "select max(id) max_id from event_log";
         return template.getDatabaseClient()
                 .sql(sql)
                 .map(row -> {
-                    return row.get("max_event_id", Long.class);
+                    return row.get("max_id", Long.class);
                 })
                 .one();
     }
@@ -208,7 +208,7 @@ public class Storage {
     }
 }
 
-record EventLog(@Id Long eventId, UUID streamId, String eventType, Json payload) {
+record EventLog(@Id Long id, UUID streamId, String eventType, Json payload) {
     public static EventLog fromEvent(Event<?> event, UUID streamId) {
         ObjectMapper objectMapper = JsonMapper.builder().build();
         final ObjectWriter w = objectMapper.writer();
@@ -227,4 +227,4 @@ record EventLog(@Id Long eventId, UUID streamId, String eventType, Json payload)
 
 record CommandLog(@Id Long id, UUID requestId, String commandType, Json command) {}
 
-record ProcessedCommand(Long commandId, Long eventId, String disposition) {}
+record ProcessedCommand(Long commandId, Long eventLogId, String disposition) {}
