@@ -70,7 +70,7 @@ public class CommandProcessor {
                                 try {
                                     var newEvents = decider.mutate(acc.state(), command);
                                     var newState = Utils.fold(acc.state(), newEvents, decider::apply);
-                                    log.debug("current state: {}", newEvents);
+                                    log.debug("current state: {}", newState);
                                     return new DecisionResult<T>(newState, newEvents, "Success");
                                 } catch (RuntimeException e) {
                                     log.debug("caught business rule failure: {}", e.getLocalizedMessage());
