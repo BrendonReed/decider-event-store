@@ -28,16 +28,13 @@ public class Storage {
 
     public final R2dbcEntityTemplate template;
     public final ObjectMapper objectMapper;
+    public final ObjectWriter objectWriter;
 
     @Autowired
     public Storage(R2dbcEntityTemplate template, ObjectMapper objectMapper) {
         this.template = template;
         this.objectMapper = objectMapper;
-    }
-
-    public Mono<EventLog> saveEvent(Event<?> event, UUID streamId) {
-        var ep = EventLog.fromEvent(event, streamId);
-        return template.insert(ep);
+        this.objectWriter = objectMapper.writer();
     }
 
     public Flux<EventLog> getEventsForStream(UUID streamId) {
@@ -87,6 +84,18 @@ public class Storage {
         ;
     }
 
+    private EventLog serializeEvent(Event<?> event, UUID streamId) {
+        try {
+            byte[] json = objectWriter.writeValueAsBytes(event.data());
+            var asx = Json.of(json);
+            var eventType = event.data().getClass().getName();
+            return new EventLog(null, streamId, eventType, asx);
+        } catch (JsonProcessingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            throw new UnsupportedOperationException();
+        }
+    }
     // TODO: add test to make sure the transaction works.
     @Transactional
     public Mono<ProcessedCommand> save(CommandLog command, List<Event<?>> events, UUID streamId) {
@@ -99,7 +108,10 @@ public class Storage {
                 .one();
 
         var saveEvents = Flux.fromIterable(events)
-                .flatMapSequential(event -> saveEvent(event, streamId))
+                .flatMapSequential(event -> { 
+                    var ep = serializeEvent(event, streamId);
+                    return template.insert(ep);
+                })
                 .map(e -> e)
                 .reduce((maxObject, nextObject) -> {
                     if (nextObject.id() > maxObject.id()) {
@@ -208,22 +220,7 @@ public class Storage {
     }
 }
 
-record EventLog(@Id Long id, UUID streamId, String eventType, Json payload) {
-    public static EventLog fromEvent(Event<?> event, UUID streamId) {
-        ObjectMapper objectMapper = JsonMapper.builder().build();
-        final ObjectWriter w = objectMapper.writer();
-        try {
-            byte[] json = w.writeValueAsBytes(event.data());
-            var asx = Json.of(json);
-            var eventType = event.data().getClass().getName();
-            return new EventLog(null, streamId, eventType, asx);
-        } catch (JsonProcessingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new UnsupportedOperationException();
-        }
-    }
-}
+record EventLog(@Id Long id, UUID streamId, String eventType, Json payload) {}
 
 record CommandLog(@Id Long id, UUID requestId, String commandType, Json command) {}
 
