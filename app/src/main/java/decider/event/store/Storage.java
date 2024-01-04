@@ -28,10 +28,12 @@ import reactor.core.publisher.Mono;
 public class Storage {
 
     public final R2dbcEntityTemplate template;
+    public final ObjectMapper objectMapper;
 
     @Autowired
-    public Storage(R2dbcEntityTemplate template) {
+    public Storage(R2dbcEntityTemplate template, ObjectMapper objectMapper) {
         this.template = template;
+        this.objectMapper = objectMapper;
     }
 
     public Mono<EventPersistance> saveEvent(Event<?> event, UUID streamId) {
@@ -148,7 +150,6 @@ public class Storage {
     }
 
     public <T> Mono<CommandPersistance> insertCommand(UUID requestId, T payload) {
-        ObjectMapper objectMapper = JsonMapper.builder().build();
         final ObjectWriter w = objectMapper.writer();
         try {
             byte[] json = w.writeValueAsBytes(payload);
