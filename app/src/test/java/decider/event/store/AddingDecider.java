@@ -17,11 +17,6 @@ public class AddingDecider implements Decider<Integer> {
         var command = commandWrapper.data();
         if (command instanceof GetDiff i) {
             var diff = i.toMatch - state;
-            var newState = state + diff;
-            // must be odd
-            if (newState % 2 != 1) {
-                throw new IllegalStateException("Business rule violation! State must always be odd.");
-            }
             return List.of(new Event<>(new DiffEvent(diff)));
         }
         throw new UnsupportedOperationException("Invalid command");
@@ -29,10 +24,16 @@ public class AddingDecider implements Decider<Integer> {
 
     @Override
     public Integer apply(Integer currentState, Event<?> event) {
+        Integer nextState = currentState;
         if (event.data() instanceof DiffEvent e) {
-            return currentState + e.amount();
+            nextState = currentState + e.amount();
         }
-        throw new UnsupportedOperationException("Invalid event");
+        if (nextState % 2 != 1) {
+            throw new IllegalStateException("Business rule violation! State must always be odd.");
+        }
+        else {
+            return nextState;
+        }
     }
 
     @Override
