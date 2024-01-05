@@ -32,10 +32,6 @@ public class EventMaterializer<A> {
         // TODO: setting checkpoint and saving state should be transactional
         System.out.println("materializing from: " + checkpoint);
         return storage.getLatestEvents(checkpoint)
-                .map(ep -> {
-                    checkpoint = ep.id();
-                    return Storage.deserializeEvent(ep.eventType(), ep.payload());
-                })
                 .reduce(this.state, accumulator)
                 .flatMap(s -> {
                     this.state = s;

@@ -5,5 +5,8 @@
     "spotlessGradle.format.enable": true,
     "spotlessGradle.diagnostics.enable": false,
     "editor.defaultFormatter": "richardwillis.vscode-spotless-gradle"
+  },
+  "files.watcherExclude": {
+    "**/target": true
   }
 }

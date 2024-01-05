@@ -27,9 +27,8 @@ public class CommandProcessor {
         var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
 
         log.info("Loading initial state");
-        var historicalEvents = storage.getEventsForStream(streamId);
-        var initialState = historicalEvents.reduce(decider.initialState(streamId), (s, eventP) -> {
-            var event = Storage.toEvent(eventP);
+        var historicalEvents = storage.getEventsForStream2(streamId);
+        var initialState = historicalEvents.reduce(decider.initialState(streamId), (s, event) -> {
             return decider.apply(s, event);
         });
 
@@ -51,7 +50,7 @@ public class CommandProcessor {
         // .  the event should also not be saved
 
         var listener = pubSubConnection.registerListener("command_logged");
-        Flux<CommandLog> allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);
+        var allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);
         var run = initialState
                 .doOnTerminate(() -> {
                     Instant end = Instant.now();
@@ -64,8 +63,7 @@ public class CommandProcessor {
                     var startState = new DecisionResult<T>(state, new ArrayList<Event<?>>(), null);
                     var states = allCommands
                             .scan(startState, (acc, commandDto) -> {
-                                var command = Storage.deserializeCommand(
-                                        commandDto.commandType(), commandDto.requestId(), commandDto.command());
+                                var command = commandDto;
                                 // could throw an IllegalStateException if this command violates business rules.
                                 try {
                                     var newEvents = decider.mutate(acc.state(), command);
@@ -86,9 +84,9 @@ public class CommandProcessor {
                         var commandDto = tuple.getT1();
                         var disposition = tuple.getT2().commandDisposition();
                         return disposition == "Success"
-                                ? storage.save(commandDto, newEvents, streamId)
+                                ? storage.save(commandDto.id(), newEvents, streamId)
                                         .map(pc -> tuple.getT2().state())
-                                : storage.saveFailedCommand(commandDto)
+                                : storage.saveFailedCommand(commandDto.id())
                                         .map(pc -> tuple.getT2().state());
                     });
                     return eventLog;

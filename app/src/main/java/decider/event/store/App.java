@@ -80,17 +80,18 @@ public class App implements CommandLineRunner {
             // validates
             // checks business rules
             // creates command and appends to command log
-            Flux<Command<?>> cliInput = Flux.generate(() -> 0, (state, sink) -> {
+            Flux<Command<?>> cliInput = Flux.generate(() -> 1L, (state, sink) -> {
                 System.out.println("Please enter a value");
                 String y = in.nextLine();
                 Integer asInt = Integer.parseInt(y); // validates
                 var command = asInt >= 0
-                        ? new Command<CounterDecider.Increment>(UUID.randomUUID(), new CounterDecider.Increment(asInt))
+                        ? new Command<CounterDecider.Increment>(
+                                state, UUID.randomUUID(), new CounterDecider.Increment(asInt))
                         : new Command<CounterDecider.Decrement>(
-                                UUID.randomUUID(), new CounterDecider.Decrement(-asInt));
+                                state, UUID.randomUUID(), new CounterDecider.Decrement(-asInt));
 
                 sink.next(command);
-                return state + asInt;
+                return state + 1;
             });
         }
     }

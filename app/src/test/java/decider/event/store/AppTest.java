@@ -159,9 +159,6 @@ class Sandbox {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-        var e = Storage.deserializeEvent(className, jsonPayload);
-        System.out.println("and event: " + e);
     }
 }
 
