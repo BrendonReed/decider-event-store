@@ -4,8 +4,10 @@ import decider.event.store.AddingDecider.AddingCommand;
 import decider.event.store.AddingDecider.AddingEvent;
 import decider.event.store.AddingDecider.DiffEvent;
 import decider.event.store.AddingDecider.GetDiff;
+import decider.event.store.DbRecordTypes.CommandLog;
+import decider.event.store.DbRecordTypes.EventLog;
 
-public class NoDtoMapper implements DtoMapper<AddingCommand, AddingEvent, AddingCommand, AddingEvent> {
+public class NoDtoMapper implements DtoMapper<AddingCommand, AddingEvent, AddingEvent> {
 
     JsonUtil jsonUtil;
 

@@ -7,4 +7,4 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Configuration
 @SpringBootApplication
 @EnableTransactionManagement
-class InfrastructureConfiguration {}
+public class InfrastructureConfiguration {}

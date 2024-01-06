@@ -53,6 +53,15 @@ application {
 	mainClass = 'decider.event.store.App'
 }
 
+
+task unitTests(type: Test) {
+	include 'decider.event.store.unitTests.*'
+}
+
+task componentTests(type: Test) {
+	include 'decider.event.store.componentTests.*'
+}
+
 tasks.named('test') {
 	// Use JUnit Platform for unit tests.
 	useJUnitPlatform()

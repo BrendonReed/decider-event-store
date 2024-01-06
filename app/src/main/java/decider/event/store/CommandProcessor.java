@@ -15,13 +15,13 @@ public class CommandProcessor<C, E, S, CD, ED> {
     private Storage storage;
     private PubSubConnection pubSubConnection;
     private Decider<C, E, S> decider;
-    private DtoMapper<C, E, CD, ED> dtoMapper;
+    private DtoMapper<C, E, ED> dtoMapper;
 
     public CommandProcessor(
             Storage storage,
             PubSubConnection pubSubConnection,
             Decider<C, E, S> decider,
-            DtoMapper<C, E, CD, ED> dtoMapper) {
+            DtoMapper<C, E, ED> dtoMapper) {
         this.storage = storage;
         this.pubSubConnection = pubSubConnection;
         this.decider = decider;

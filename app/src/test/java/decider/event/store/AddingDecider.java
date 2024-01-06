@@ -8,7 +8,7 @@ public class AddingDecider implements Decider<AddingDecider.AddingCommand, Addin
         List<? extends AddingEvent> mutate(Integer state);
     }
 
-    record GetDiff(Integer toMatch) implements AddingCommand {
+    public record GetDiff(Integer toMatch) implements AddingCommand {
 
         @Override
         public List<? extends AddingEvent> mutate(Integer state) {
@@ -22,7 +22,7 @@ public class AddingDecider implements Decider<AddingDecider.AddingCommand, Addin
         Integer apply(Integer currentState);
     }
 
-    record DiffEvent(Integer amount) implements AddingEvent {
+    public record DiffEvent(Integer amount) implements AddingEvent {
 
         @Override
         public Integer apply(Integer currentState) {

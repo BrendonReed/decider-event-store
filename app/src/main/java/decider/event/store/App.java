@@ -32,6 +32,9 @@ public class App implements CommandLineRunner {
     @Autowired
     public ObjectMapper objectMapper;
 
+    @Autowired
+    public JsonUtil jsonUtil;
+
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
     }
@@ -39,7 +42,7 @@ public class App implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         var decider = new CounterDecider();
-        var dtoMapper = new DeciderMapper(objectMapper);
+        var dtoMapper = new DeciderMapper(jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         var run = commandProcessor.process();
         run.blockLast(Duration.ofMinutes(400));

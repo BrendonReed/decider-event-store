@@ -26,11 +26,11 @@ public class CounterDecider
     }
 
     // commands
-    interface CounterCommand {
+    public interface CounterCommand {
         List<? extends CounterEvent> mutate(CounterState state);
     }
 
-    record Increment(long amount) implements CounterCommand {
+    public record Increment(long amount) implements CounterCommand {
 
         @Override
         public List<? extends CounterEvent> mutate(CounterState state) {
@@ -38,7 +38,7 @@ public class CounterDecider
         }
     }
 
-    record Decrement(long amount) implements CounterCommand {
+    public record Decrement(long amount) implements CounterCommand {
 
         @Override
         public List<? extends CounterEvent> mutate(CounterState state) {
@@ -51,7 +51,7 @@ public class CounterDecider
         CounterState apply(CounterState currentState);
     }
 
-    record Incremented(long amount) implements CounterEvent {
+    public record Incremented(long amount) implements CounterEvent {
 
         @Override
         public CounterState apply(CounterState currentState) {
@@ -59,7 +59,7 @@ public class CounterDecider
         }
     }
 
-    record Decremented(long amount) implements CounterEvent {
+    public record Decremented(long amount) implements CounterEvent {
 
         @Override
         public CounterState apply(CounterState currentState) {
@@ -68,5 +68,5 @@ public class CounterDecider
     }
 
     // state
-    record CounterState(@Id UUID id, long totalCount) {}
+    public record CounterState(@Id UUID id, long totalCount) {}
 }

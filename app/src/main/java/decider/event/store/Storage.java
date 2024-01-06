@@ -3,15 +3,16 @@ package decider.event.store;
 import static org.springframework.data.relational.core.query.Criteria.*;
 import static org.springframework.data.relational.core.query.Query.*;
 
+import decider.event.store.DbRecordTypes.CommandLog;
+import decider.event.store.DbRecordTypes.EventLog;
+import decider.event.store.DbRecordTypes.ProcessedCommand;
 import io.r2dbc.postgresql.api.Notification;
-import io.r2dbc.postgresql.codec.Json;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -158,9 +159,3 @@ public class Storage {
         return template.insert(cp);
     }
 }
-
-record EventLog(@Id Long id, UUID streamId, String eventType, Json payload) {}
-
-record CommandLog(@Id Long id, UUID requestId, String commandType, Json command) {}
-
-record ProcessedCommand(Long commandId, Long eventLogId, String disposition) {}

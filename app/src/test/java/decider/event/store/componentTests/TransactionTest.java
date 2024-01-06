@@ -1,11 +1,21 @@
-package decider.event.store;
+package decider.event.store.componentTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import decider.event.store.AddingDecider;
 import decider.event.store.AddingDecider.GetDiff;
+import decider.event.store.CommandProcessor;
+import decider.event.store.CounterDecider;
+import decider.event.store.DeciderMapper;
+import decider.event.store.Dtos;
+import decider.event.store.InfrastructureConfiguration;
+import decider.event.store.JsonUtil;
+import decider.event.store.NoDtoMapper;
+import decider.event.store.PubSubConnection;
+import decider.event.store.Storage;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
@@ -102,7 +112,7 @@ public class TransactionTest {
         System.out.println("insert duration " + insertDuration);
 
         var decider = new CounterDecider();
-        var dtoMapper = new DeciderMapper(objectMapper);
+        var dtoMapper = new DeciderMapper(jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
                 .process()
