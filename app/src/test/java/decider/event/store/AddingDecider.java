@@ -1,38 +1,51 @@
 package decider.event.store;
 
 import java.util.List;
-import java.util.UUID;
 
-public class AddingDecider implements Decider<Integer> {
+public class AddingDecider implements Decider<AddingDecider.AddingCommand, AddingDecider.AddingEvent, Integer> {
     // commands
-    record GetDiff(Integer toMatch) {}
+    interface AddingCommand {
+        List<? extends AddingEvent> mutate(Integer state);
+    }
+
+    record GetDiff(Integer toMatch) implements AddingCommand {
+
+        @Override
+        public List<? extends AddingEvent> mutate(Integer state) {
+            var diff = toMatch - state;
+            return List.of(new DiffEvent(diff));
+        }
+    }
 
     // events
-    record DiffEvent(Integer amount) {}
+    public interface AddingEvent {
+        Integer apply(Integer currentState);
+    }
+
+    record DiffEvent(Integer amount) implements AddingEvent {
+
+        @Override
+        public Integer apply(Integer currentState) {
+            Integer nextState = currentState;
+            nextState = currentState + amount();
+            if (nextState % 2 != 1) {
+                throw new IllegalStateException("Business rule violation! State must always be odd.");
+            } else {
+                return nextState;
+            }
+        }
+    }
 
     // business rule: must always be odd.
     // generates an event that must be added to the current state to equal command
     @Override
-    public List<Event<?>> mutate(Integer state, Command<?> commandWrapper) {
-        var command = commandWrapper.data();
-        if (command instanceof GetDiff i) {
-            var diff = i.toMatch - state;
-            return List.of(new Event<>(new DiffEvent(diff)));
-        }
-        throw new UnsupportedOperationException("Invalid command");
+    public List<? extends AddingEvent> mutate(Integer state, AddingCommand command) {
+        return command.mutate(state);
     }
 
     @Override
-    public Integer apply(Integer currentState, Event<?> event) {
-        Integer nextState = currentState;
-        if (event.data() instanceof DiffEvent e) {
-            nextState = currentState + e.amount();
-        }
-        if (nextState % 2 != 1) {
-            throw new IllegalStateException("Business rule violation! State must always be odd.");
-        } else {
-            return nextState;
-        }
+    public Integer apply(Integer currentState, AddingEvent event) {
+        return event.apply(currentState);
     }
 
     @Override
@@ -41,7 +54,7 @@ public class AddingDecider implements Decider<Integer> {
     }
 
     @Override
-    public Integer initialState(UUID id) {
+    public Integer initialState() {
         return 0;
     }
 }

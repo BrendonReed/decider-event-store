@@ -3,21 +3,16 @@ package decider.event.store;
 import static org.springframework.data.relational.core.query.Criteria.*;
 import static org.springframework.data.relational.core.query.Query.*;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.codec.Json;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
-import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -28,25 +23,15 @@ import reactor.core.publisher.Mono;
 public class Storage {
 
     public final R2dbcEntityTemplate template;
-    public final ObjectMapper objectMapper;
-    public final ObjectWriter objectWriter;
+    private final JsonUtil jsonUtil;
 
     @Autowired
-    public Storage(R2dbcEntityTemplate template, ObjectMapper objectMapper) {
+    public Storage(R2dbcEntityTemplate template, JsonUtil jsonUtil) {
         this.template = template;
-        this.objectMapper = objectMapper;
-        this.objectWriter = objectMapper.writer();
+        this.jsonUtil = jsonUtil;
     }
 
-    public Flux<? extends Event<?>> getEventsForStream2(UUID streamId) {
-        return template.select(EventLog.class)
-                .from("event_log")
-                .matching(query(where("stream_id").is(streamId)))
-                .all()
-                .map(this::toEvent);
-    }
-
-    public Flux<EventLog> getEventsForStream(UUID streamId) {
+    public Flux<EventLog> getEventsForStream2(UUID streamId) {
         return template.select(EventLog.class)
                 .from("event_log")
                 .matching(query(where("stream_id").is(streamId)))
@@ -75,44 +60,32 @@ public class Storage {
                 .all();
     }
 
-    public Flux<? extends Command<?>> getInifiteStreamOfUnprocessedCommands(Flux<Notification> sub) {
+    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands2(Flux<Notification> sub) {
 
         var batchSize = 100;
         var pollingInterval = Duration.ofSeconds(2);
         var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
-        var r = getCommands(batchSize)
-                        .concatWith(triggers.onBackpressureDrop(data -> {
-                                    log.debug("dropping");
-                                })
-                                .concatMap(t -> getCommands(batchSize)))
-                        .doOnError(error -> {
-                            // Log details when an error occurs
-                            System.out.println("Error occurred: " + error.getMessage());
+        return getCommands(batchSize)
+                .concatWith(triggers.onBackpressureDrop(data -> {
+                            log.debug("dropping");
                         })
-                        .map(commandDto -> {
-                            var command = deserializeCommand(commandDto);
-                            return command;
-                        })
-                // .retryWhen(Retry.backoff(3, Duration.ofMillis(1000)))
-                ;
-        return r;
+                        .concatMap(t -> getCommands(batchSize)))
+                .doOnError(error -> {
+                    // Log details when an error occurs
+                    log.error("Error occurred: {}", error.getMessage());
+                })
+        // .retryWhen(Retry.backoff(3, Duration.ofMillis(1000)))
+        ;
     }
 
-    private EventLog serializeEvent(Event<?> event, UUID streamId) {
-        try {
-            byte[] json = objectWriter.writeValueAsBytes(event.data());
-            var asx = Json.of(json);
-            var eventType = event.data().getClass().getName();
-            return new EventLog(null, streamId, eventType, asx);
-        } catch (JsonProcessingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new UnsupportedOperationException();
-        }
+    private <ED> EventLog toEventLog(ED event, UUID streamId) {
+        var r = jsonUtil.toJson(event);
+        return new EventLog(null, streamId, r.objectType(), r.json());
     }
+
     // TODO: add test to make sure the transaction works.
     @Transactional
-    public Mono<ProcessedCommand> save(Long commandLogId, List<Event<?>> events, UUID streamId) {
+    public <ED> Mono<ProcessedCommand> saveDto(Long commandLogId, List<ED> events, UUID streamId) {
         // because of the way stream is processed, it's possible to have duplicates
         // so it's important that this process is idempotent, so if the command
         // has already been processed, then just skip it.
@@ -123,10 +96,9 @@ public class Storage {
 
         var saveEvents = Flux.fromIterable(events)
                 .flatMapSequential(event -> {
-                    var ep = serializeEvent(event, streamId);
-                    return template.insert(ep);
+                    var el = toEventLog(event, streamId);
+                    return template.insert(el);
                 })
-                .map(e -> e)
                 .reduce((maxObject, nextObject) -> {
                     if (nextObject.id() > maxObject.id()) {
                         return nextObject;
@@ -147,17 +119,17 @@ public class Storage {
         });
     }
 
-    public Flux<? extends Event<?>> getLatestEvents(Long latestEvent) {
-        List<Criteria> criteriaList = new ArrayList<>();
+    // public Flux<? extends Event<?>> getLatestEvents(Long latestEvent) {
+    //     List<Criteria> criteriaList = new ArrayList<>();
 
-        criteriaList.add(where("id").greaterThan(latestEvent));
-        Criteria combinedCriteria = criteriaList.stream().reduce(Criteria.empty(), Criteria::and, Criteria::and);
-        return template.select(EventLog.class)
-                .from("event_log")
-                .matching(query(combinedCriteria))
-                .all()
-                .map(this::toEvent);
-    }
+    //     criteriaList.add(where("id").greaterThan(latestEvent));
+    //     Criteria combinedCriteria = criteriaList.stream().reduce(Criteria.empty(), Criteria::and, Criteria::and);
+    //     return template.select(EventLog.class)
+    //             .from("event_log")
+    //             .matching(query(combinedCriteria))
+    //             .all()
+    //             .map(this::toEvent);
+    // }
 
     public Mono<Long> getLatestEventId() {
         var sql = "select max(id) max_id from event_log";
@@ -181,54 +153,9 @@ public class Storage {
     }
 
     public <T> Mono<CommandLog> insertCommand(UUID requestId, T payload) {
-        try {
-            byte[] json = objectWriter.writeValueAsBytes(payload);
-            var commandType = payload.getClass().getName();
-            var commandJson = Json.of(json);
-            var cp = new CommandLog(null, requestId, commandType, commandJson);
-            return template.insert(cp);
-        } catch (JsonProcessingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    Event<?> toEvent(EventLog ep) {
-        try {
-            // TODO: for event versioning future preparation, this should
-            // probably do explicit weak typed mapping. Not sure if Jackson has
-            // some support for that...
-            var data = objectMapper.readValue(ep.payload().asString(), Class.forName(ep.eventType()));
-            return new Event<>(data);
-        } catch (JsonProcessingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new UnsupportedOperationException();
-        } catch (ClassNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    Command<?> deserializeCommand(CommandLog commandDto) {
-
-        try {
-            // TODO: for event versioning future preparation, this should
-            // probably do explicit weak typed mapping. Not sure if Jackson has
-            // some support for that...
-            var data = objectMapper.readValue(commandDto.command().asString(), Class.forName(commandDto.commandType()));
-            return new Command<>(commandDto.id(), commandDto.requestId(), data);
-        } catch (JsonProcessingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            throw new UnsupportedOperationException();
-        } catch (ClassNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return null;
+        var jsonMeta = jsonUtil.toJson(payload);
+        var cp = new CommandLog(null, requestId, jsonMeta.objectType(), jsonMeta.json());
+        return template.insert(cp);
     }
 }
 

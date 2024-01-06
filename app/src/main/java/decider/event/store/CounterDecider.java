@@ -2,70 +2,71 @@ package decider.event.store;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.annotation.Id;
 
-// Domain functions, independent per stream
-// in this case, a super simple counter domain
-// all pure functions, easily testable
+public class CounterDecider
+        implements Decider<CounterDecider.CounterCommand, CounterDecider.CounterEvent, CounterDecider.CounterState> {
 
-public class CounterDecider implements Decider<CounterState> {
-
-    @Override
-    public List<Event<?>> mutate(CounterState state, Command<?> commandWrapper) {
-        var command = commandWrapper.data();
-        if (command instanceof Increment i) {
-            return List.of(new Event<>(i));
-        } else if (command instanceof Decrement d) {
-            return List.of(new Event<>(d));
-        }
-        throw new UnsupportedOperationException("invalid command");
-    }
-    // aka mutate
-    static List<Event<?>> decide(CounterState state, Command<?> commandWrapper) {
-        var command = commandWrapper.data();
-        if (command instanceof Increment i) {
-            return List.of(new Event<>(i));
-        } else if (command instanceof Decrement d) {
-            return List.of(new Event<>(d));
-        }
-        throw new UnsupportedOperationException("invalid command");
-    }
-
-    // aka applicator
-    @Override
-    public CounterState apply(CounterState currentState, Event<?> event) {
-        if (event.data() instanceof Increment e) {
-            var newState = new CounterState(currentState.id(), currentState.totalCount() + e.amount());
-            return newState;
-        } else if (event.data() instanceof Decrement e) {
-            var newState = new CounterState(currentState.id(), currentState.totalCount() - e.amount());
-            return newState;
-        }
-        throw new UnsupportedOperationException("invalid event");
-    }
-
-    static CounterState evolve(CounterState currentState, Event<?> event) {
-        if (event.data() instanceof Increment e) {
-            var newState = new CounterState(currentState.id(), currentState.totalCount() + e.amount());
-            return newState;
-        } else if (event.data() instanceof Decrement e) {
-            var newState = new CounterState(currentState.id(), currentState.totalCount() - e.amount());
-            return newState;
-        }
-        throw new UnsupportedOperationException("invalid event");
+    public List<? extends CounterEvent> mutate(CounterState state, CounterCommand command) {
+        return command.mutate(state);
     }
 
     @Override
-    public CounterState initialState(UUID id) {
-        return new CounterState(id, 0);
+    public CounterState apply(CounterState currentState, CounterEvent event) {
+        return event.apply(currentState);
     }
 
-    // shared command and event types
-    record Increment(long amount) {}
-
-    record Decrement(long amount) {}
-
     @Override
+    public CounterState initialState() {
+        return new CounterState(UUID.randomUUID(), 0);
+    }
+
     public boolean isTerminal(CounterState state) {
         return false;
     }
+
+    // commands
+    interface CounterCommand {
+        List<? extends CounterEvent> mutate(CounterState state);
+    }
+
+    record Increment(long amount) implements CounterCommand {
+
+        @Override
+        public List<? extends CounterEvent> mutate(CounterState state) {
+            return List.of(new Incremented(amount));
+        }
+    }
+
+    record Decrement(long amount) implements CounterCommand {
+
+        @Override
+        public List<? extends CounterEvent> mutate(CounterState state) {
+            return List.of(new Decremented(amount));
+        }
+    }
+
+    // events
+    public interface CounterEvent {
+        CounterState apply(CounterState currentState);
+    }
+
+    record Incremented(long amount) implements CounterEvent {
+
+        @Override
+        public CounterState apply(CounterState currentState) {
+            return new CounterState(currentState.id(), currentState.totalCount() + amount());
+        }
+    }
+
+    record Decremented(long amount) implements CounterEvent {
+
+        @Override
+        public CounterState apply(CounterState currentState) {
+            return new CounterState(currentState.id(), currentState.totalCount() - amount());
+        }
+    }
+
+    // state
+    record CounterState(@Id UUID id, long totalCount) {}
 }

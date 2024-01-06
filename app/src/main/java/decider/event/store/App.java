@@ -1,10 +1,9 @@
 package decider.event.store;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -31,7 +30,7 @@ public class App implements CommandLineRunner {
     private PubSubConnection pubSubConnection;
 
     @Autowired
-    private CommandProcessor commandProcessor;
+    public ObjectMapper objectMapper;
 
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
@@ -39,34 +38,16 @@ public class App implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-
         var decider = new CounterDecider();
-        var run = commandProcessor.process(decider);
+        var dtoMapper = new DeciderMapper(objectMapper);
+        var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
+        var run = commandProcessor.process();
         run.blockLast(Duration.ofMinutes(400));
-    }
-
-    public void eventMaterializer() {
-        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
-
-        var decider = new CounterDecider();
-        var materializer = new EventMaterializer<CounterState>(storage, decider.initialState(streamId));
-
-        var listener = pubSubConnection.registerListener("event_updated").flatMap(x -> {
-            String eventStreamId = Utils.unsafeExtract(x.getParameter());
-            // get stored events, materialize a view and store it
-            return materializer.next(decider::apply);
-        });
-        // listener.subscribeOn(Schedulers.parallel());
-        listener.subscribe();
-        log.debug("subscribed to pg listener");
     }
 
     public void cliInput() {
         log.info("starting");
-        var decider = new CounterDecider();
-        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
 
-        var events = new ArrayList<Event<?>>();
         var timestamp = Instant.now();
         try (Scanner in = new Scanner(System.in)) {
             // command generator:
@@ -80,16 +61,11 @@ public class App implements CommandLineRunner {
             // validates
             // checks business rules
             // creates command and appends to command log
-            Flux<Command<?>> cliInput = Flux.generate(() -> 1L, (state, sink) -> {
+            Flux<Integer> cliInput = Flux.generate(() -> 1L, (state, sink) -> {
                 System.out.println("Please enter a value");
                 String y = in.nextLine();
                 Integer asInt = Integer.parseInt(y); // validates
-                var command = asInt >= 0
-                        ? new Command<CounterDecider.Increment>(
-                                state, UUID.randomUUID(), new CounterDecider.Increment(asInt))
-                        : new Command<CounterDecider.Decrement>(
-                                state, UUID.randomUUID(), new CounterDecider.Decrement(-asInt));
-
+                var command = asInt;
                 sink.next(command);
                 return state + 1;
             });

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import decider.event.store.AddingDecider.GetDiff;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
@@ -34,6 +36,12 @@ public class TransactionTest {
 
     @Autowired
     PubSubConnection pubSubConnection;
+
+    @Autowired
+    ObjectMapper objectMapper;
+
+    @Autowired
+    JsonUtil jsonUtil;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -86,17 +94,18 @@ public class TransactionTest {
         var elementCount = 200;
         var expected = 20100L; // for sum of 1 to 200
         var commands = Flux.range(1, elementCount).flatMapSequential(i -> {
-            var command = new CounterDecider.Increment(i);
+            var command = new Dtos.IncrementDto(i);
             return storage.insertCommand(UUID.randomUUID(), command);
         });
         var insertDuration =
                 commands.as(StepVerifier::create).expectNextCount(elementCount).verifyComplete();
         System.out.println("insert duration " + insertDuration);
 
-        var commandProcessor = new CommandProcessor(storage, pubSubConnection);
         var decider = new CounterDecider();
+        var dtoMapper = new DeciderMapper(objectMapper);
+        var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
-                .process(decider)
+                .process()
                 .take(elementCount)
                 .as(StepVerifier::create)
                 .expectNextCount(199)
@@ -109,9 +118,9 @@ public class TransactionTest {
     @Test
     void FailsBusinessRule() throws JsonProcessingException {
         var commands = Flux.just(
-                new AddingDecider.GetDiff(1),
+                new GetDiff(1),
                 // state is 1
-                new AddingDecider.GetDiff(4)
+                new GetDiff(4)
                 // state is 5
                 );
         var runCommands = commands.flatMapSequential(command -> {
@@ -122,10 +131,11 @@ public class TransactionTest {
                 runCommands.as(StepVerifier::create).expectNextCount(2).verifyComplete();
         System.out.println("insert duration " + insertDuration);
 
-        var commandProcessor = new CommandProcessor(storage, pubSubConnection);
         var decider = new AddingDecider();
+        var dtoMapper = new NoDtoMapper(jsonUtil);
+        var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
-                .process(decider)
+                .process()
                 .take(1)
                 .as(StepVerifier::create)
                 .assertNext(nextState -> assertThat(nextState).isEqualTo(1))

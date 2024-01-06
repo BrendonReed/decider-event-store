@@ -1,9 +1,5 @@
 package decider.event.store;
 
-import java.util.function.BiFunction;
-import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Mono;
-
 public class EventMaterializer<A> {
     public Storage storage;
 
@@ -27,15 +23,15 @@ public class EventMaterializer<A> {
     // save new state
     // update checkpoints
 
-    @Transactional
-    public Mono<A> next(BiFunction<A, ? super Event<?>, A> accumulator) {
-        // TODO: setting checkpoint and saving state should be transactional
-        System.out.println("materializing from: " + checkpoint);
-        return storage.getLatestEvents(checkpoint)
-                .reduce(this.state, accumulator)
-                .flatMap(s -> {
-                    this.state = s;
-                    return storage.template.update(s);
-                });
-    }
+    // @Transactional
+    // public Mono<A> next(BiFunction<A, ? super Event<?>, A> accumulator) {
+    //     // TODO: setting checkpoint and saving state should be transactional
+    //     System.out.println("materializing from: " + checkpoint);
+    //     return storage.getLatestEvents(checkpoint)
+    //             .reduce(this.state, accumulator)
+    //             .flatMap(s -> {
+    //                 this.state = s;
+    //                 return storage.template.update(s);
+    //             });
+    // }
 }

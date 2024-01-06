@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import decider.event.store.CounterDecider.Increment;
+import decider.event.store.Dtos.IncrementDto;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
@@ -38,7 +38,7 @@ class Sequence {
     }
 }
 
-class DbSandbox {
+class DbPlay {
 
     PostgresqlConnectionFactory connectionFactory() {
 
@@ -140,12 +140,23 @@ class Sandbox {
 
     @Test
     public void deserializeEvent() {
-        var className = "decider.event.store.Decider$Decrement";
+
+        String classString = decider.event.store.Dtos.IncrementDto.class.toString();
+        System.out.println("class: " + classString);
+        var className = "decider.event.store.Dtos$IncrementDto";
         var jsonString = "{\"amount\": 5}";
         var jsonPayload = Json.of(jsonString);
         ObjectMapper objectMapper = JsonMapper.builder().build();
+        var mapper = new DeciderMapper(objectMapper);
+        // get a IncrementedDto
         try {
-            var incrememnt1 = objectMapper.readValue(jsonPayload.asString(), Increment.class);
+            // byte[] json = objectWriter.writeValueAsBytes(jsonString);
+            // var asx = Json.of(json);
+            var eventLog = new EventLog(1L, UUID.randomUUID(), className, jsonPayload);
+            var domainObject = mapper.toEvent(eventLog);
+            System.out.println("deserialized: " + domainObject);
+
+            var incrememnt1 = objectMapper.readValue(jsonPayload.asString(), IncrementDto.class);
             System.out.println("deserialized: " + incrememnt1);
             var incrememnt2 = objectMapper.readValue(jsonPayload.asString(), Class.forName(className));
             System.out.println("deserialized: " + incrememnt2);

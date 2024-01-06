@@ -64,7 +64,7 @@ tasks.named('test') {
 		exceptionFormat TestExceptionFormat.FULL
 		showExceptions true
 		showCauses true
-		showStackTraces false
+		showStackTraces true
 
 		// set options for log level DEBUG and INFO
 		debug {

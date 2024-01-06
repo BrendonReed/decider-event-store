@@ -2,6 +2,14 @@
 -- DB w:db = postgresql://postgres:password@localhost:5402/postgres
 
 select now();
+select * from 
+
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+  AND table_type = 'BASE TABLE';
+
+select now();
 
 delete from event_log;
 
@@ -82,7 +90,7 @@ truncate command_log;
 INSERT INTO command_log (request_id, command_type, command)
 SELECT
     uuid_generate_v4(),
-    'decider.event.store.CounterDecider$Increment',
+    'decider.event.store.Dtos$IncrementDto',
     ('{"amount": ' || generate_series || '}')::jsonb
 FROM generate_series(1, 100);
 
