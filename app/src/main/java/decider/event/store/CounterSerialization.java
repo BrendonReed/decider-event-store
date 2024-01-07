@@ -1,7 +1,5 @@
 package decider.event.store;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.CounterDecider.CounterCommand;
 import decider.event.store.CounterDecider.CounterEvent;
@@ -14,23 +12,24 @@ import decider.event.store.DbRecordTypes.EventLog;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class DeciderMapper implements DtoMapper<CounterCommand, CounterEvent> {
+public class CounterSerialization implements SerializationMapper<CounterCommand, CounterEvent> {
 
     private final ObjectMapper objectMapper;
     private final JsonUtil jsonUtil;
 
-    public DeciderMapper(JsonUtil jsonUtil, ObjectMapper objectMapper) {
+    public CounterSerialization(JsonUtil jsonUtil, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.jsonUtil = jsonUtil;
     }
 
     public EventLog serialize(CounterEvent entity) {
+        var eventType = entity.getClass().getName();
         if (entity instanceof Incremented i) {
             var asJson = jsonUtil.serialize(entity);
-            return new EventLog(null, null, "CounterEvent.Incremented", asJson);
+            return new EventLog(null, null, eventType, asJson);
         } else if (entity instanceof Decremented i) {
             var asJson = jsonUtil.serialize(entity);
-            return new EventLog(null, null, "CounterEvent.Decremented", asJson);
+            return new EventLog(null, null, eventType, asJson);
         }
         throw new UnsupportedOperationException("invalid event");
     }
@@ -50,22 +49,13 @@ public class DeciderMapper implements DtoMapper<CounterCommand, CounterEvent> {
     }
 
     public CounterEvent toEvent(EventLog dto) {
-        try {
-            switch (dto.eventType()) {
-                case "CounterEvent.Incremented": {
-                    return objectMapper.readValue(dto.payload().asString(), Incremented.class);
-                }
-                case "CounterEvent.Decremented": {
-                    return objectMapper.readValue(dto.payload().asString(), Decremented.class);
-                }
-                default: {
-                    throw new UnsupportedOperationException("invalid event");
-                }
-            }
-        } catch (JsonMappingException e) {
-            throw new UnsupportedOperationException("invalid event", e);
-        } catch (JsonProcessingException e) {
-            throw new UnsupportedOperationException("invalid event", e);
+        var x = jsonUtil.deSerialize(dto.payload().asString(), dto.eventType());
+        if (x instanceof Incremented e) {
+            return e;
         }
+        else if (x instanceof Decremented e) {
+            return e;
+        }
+        throw new UnsupportedOperationException("Error deserializing event");
     }
 }

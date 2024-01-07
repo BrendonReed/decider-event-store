@@ -10,10 +10,10 @@ import decider.event.store.AddingDecider.GetDiff;
 import decider.event.store.CommandProcessor;
 import decider.event.store.CounterDecider;
 import decider.event.store.CounterDecider.Increment;
-import decider.event.store.DeciderMapper;
+import decider.event.store.CounterSerialization;
 import decider.event.store.InfrastructureConfiguration;
 import decider.event.store.JsonUtil;
-import decider.event.store.NoDtoMapper;
+import decider.event.store.AddingSerialization;
 import decider.event.store.PubSubConnection;
 import decider.event.store.Storage;
 import java.time.LocalDateTime;
@@ -112,7 +112,7 @@ public class TransactionTest {
         System.out.println("insert duration " + insertDuration);
 
         var decider = new CounterDecider();
-        var dtoMapper = new DeciderMapper(this.jsonUtil, this.objectMapper);
+        var dtoMapper = new CounterSerialization(this.jsonUtil, this.objectMapper);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
                 .process()
@@ -142,7 +142,7 @@ public class TransactionTest {
         System.out.println("insert duration " + insertDuration);
 
         var decider = new AddingDecider();
-        var dtoMapper = new NoDtoMapper(jsonUtil, this.objectMapper);
+        var dtoMapper = new AddingSerialization(jsonUtil, this.objectMapper);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
                 .process()

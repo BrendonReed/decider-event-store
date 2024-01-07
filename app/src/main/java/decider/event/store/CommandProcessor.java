@@ -5,20 +5,21 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
-record DecisionResult2<S, E>(S state, List<? extends E> newEvents, String commandDisposition) {}
+record DecisionResult<S, E>(S state, List<? extends E> newEvents, String commandDisposition) {}
 
 @Slf4j
-public class CommandProcessor<C, E, S, CD, ED> {
+public class CommandProcessor<C, E, S> {
     private Storage storage;
     private PubSubConnection pubSubConnection;
     private Decider<C, E, S> decider;
-    private DtoMapper<C, E> dtoMapper;
+    private SerializationMapper<C, E> dtoMapper;
 
     public CommandProcessor(
-            Storage storage, PubSubConnection pubSubConnection, Decider<C, E, S> decider, DtoMapper<C, E> dtoMapper) {
+            Storage storage, PubSubConnection pubSubConnection, Decider<C, E, S> decider, SerializationMapper<C, E> dtoMapper) {
         this.storage = storage;
         this.pubSubConnection = pubSubConnection;
         this.decider = decider;
@@ -46,8 +47,8 @@ public class CommandProcessor<C, E, S, CD, ED> {
                 .flatMapMany(state -> {
                     log.info("initial state: {}", state);
 
-                    var startState = new DecisionResult2<S, E>(state, new ArrayList<>(), null);
-                    Flux<DecisionResult2<S, E>> states = allCommands
+                    var startState = new DecisionResult<S, E>(state, new ArrayList<>(), null);
+                    Flux<DecisionResult<S, E>> states = allCommands
                             .scan(startState, (acc, commandDto) -> {
                                 var command = commandDto;
                                 // could throw an IllegalStateException if this command violates business rules.
@@ -56,10 +57,10 @@ public class CommandProcessor<C, E, S, CD, ED> {
                                     var newEvents = decider.mutate(acc.state(), domainCommand);
                                     var newState = Utils.fold(acc.state(), newEvents, decider::apply);
                                     log.debug("current state: {}", newState);
-                                    return new DecisionResult2<S, E>(newState, newEvents, "Success");
+                                    return new DecisionResult<S, E>(newState, newEvents, "Success");
                                 } catch (RuntimeException e) {
                                     log.debug("caught business rule failure: {}", e.getLocalizedMessage());
-                                    return new DecisionResult2<S, E>(acc.state(), new ArrayList<>(), "Failure");
+                                    return new DecisionResult<S, E>(acc.state(), new ArrayList<>(), "Failure");
                                 }
                             })
                             .skip(1); // skip because scan emits for the inital state, which we don't want to process

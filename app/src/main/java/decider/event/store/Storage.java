@@ -92,8 +92,7 @@ public class Storage {
 
         var saveEvents = Flux.fromIterable(events)
                 .flatMapSequential(event -> {
-                    var el = event;
-                    return template.insert(el);
+                    return template.insert(event);
                 })
                 .reduce((maxObject, nextObject) -> {
                     if (nextObject.id() > maxObject.id()) {
