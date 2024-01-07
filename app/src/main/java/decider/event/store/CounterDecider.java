@@ -28,6 +28,7 @@ public class CounterDecider
     // commands
     public interface CounterCommand {
         UUID streamId();
+
         List<? extends CounterEvent> mutate(CounterState state);
     }
 
@@ -50,7 +51,9 @@ public class CounterDecider
     // events
     public interface CounterEvent {
         UUID streamId();
+
         Long tenantId();
+
         CounterState apply(CounterState currentState);
     }
 
