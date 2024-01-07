@@ -32,10 +32,10 @@ public class Storage {
         this.jsonUtil = jsonUtil;
     }
 
-    public Flux<EventLog> getEventsForStream2(UUID streamId) {
+    public Flux<EventLog> getEventsForStream(UUID streamId) {
         return template.select(EventLog.class)
                 .from("event_log")
-                .matching(query(where("stream_id").is(streamId)))
+                // .matching(query(where("stream_id").is(streamId)))
                 .all();
     }
 
@@ -61,7 +61,7 @@ public class Storage {
                 .all();
     }
 
-    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands2(Flux<Notification> sub) {
+    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands(Flux<Notification> sub) {
 
         var batchSize = 100;
         var pollingInterval = Duration.ofSeconds(2);
@@ -79,14 +79,9 @@ public class Storage {
         ;
     }
 
-    private <ED> EventLog toEventLog(ED event, UUID streamId) {
-        var r = jsonUtil.toJson(event);
-        return new EventLog(null, streamId, r.objectType(), r.json());
-    }
-
     // TODO: add test to make sure the transaction works.
     @Transactional
-    public <ED> Mono<ProcessedCommand> saveDto(Long commandLogId, List<ED> events, UUID streamId) {
+    public <ED> Mono<ProcessedCommand> saveDto(Long commandLogId, List<EventLog> events, UUID streamId) {
         // because of the way stream is processed, it's possible to have duplicates
         // so it's important that this process is idempotent, so if the command
         // has already been processed, then just skip it.
@@ -97,7 +92,7 @@ public class Storage {
 
         var saveEvents = Flux.fromIterable(events)
                 .flatMapSequential(event -> {
-                    var el = toEventLog(event, streamId);
+                    var el = event;
                     return template.insert(el);
                 })
                 .reduce((maxObject, nextObject) -> {

@@ -1,5 +1,8 @@
 package decider.event.store;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.CounterDecider.CounterCommand;
 import decider.event.store.CounterDecider.CounterEvent;
 import decider.event.store.CounterDecider.Decrement;
@@ -8,47 +11,61 @@ import decider.event.store.CounterDecider.Increment;
 import decider.event.store.CounterDecider.Incremented;
 import decider.event.store.DbRecordTypes.CommandLog;
 import decider.event.store.DbRecordTypes.EventLog;
-import decider.event.store.Dtos.DecrementedDto;
-import decider.event.store.Dtos.EventDto;
-import decider.event.store.Dtos.IncrementedDto;
+import lombok.extern.slf4j.Slf4j;
 
-public class DeciderMapper implements DtoMapper<CounterCommand, CounterEvent, EventDto> {
+@Slf4j
+public class DeciderMapper implements DtoMapper<CounterCommand, CounterEvent> {
 
-    private JsonUtil jsonUtil;
+    private final ObjectMapper objectMapper;
+    private final JsonUtil jsonUtil;
 
-    public DeciderMapper(JsonUtil jsonUtil) {
+    public DeciderMapper(JsonUtil jsonUtil, ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         this.jsonUtil = jsonUtil;
     }
 
-    public EventDto toDTO(CounterEvent entity) {
+    public EventLog serialize(CounterEvent entity) {
         if (entity instanceof Incremented i) {
-            return new Dtos.IncrementedDto(i.amount());
+            var asJson = jsonUtil.serialize(entity);
+            return new EventLog(null, null, "CounterEvent.Incremented", asJson);
         } else if (entity instanceof Decremented i) {
-            return new Dtos.IncrementedDto(i.amount());
+            var asJson = jsonUtil.serialize(entity);
+            return new EventLog(null, null, "CounterEvent.Decremented", asJson);
         }
         throw new UnsupportedOperationException("invalid event");
     }
 
     public CounterCommand toCommand(CommandLog dto) {
 
-        var fromJson = jsonUtil.deSerialize(dto.command().asString(), dto.commandType());
         // IRL this would do validation when mapping into the domain type
         // in this case we trust the data stored in DB
-        if (fromJson instanceof Dtos.IncrementDto e) {
+        var x = jsonUtil.deSerialize(dto.command().asString(), dto.commandType());
+        if (x instanceof Increment e) {
             return new Increment(e.amount());
-        } else if (fromJson instanceof Dtos.DecrementDto e) {
+        }
+        else if (x instanceof Decrement e) {
             return new Decrement(e.amount());
         }
-        throw new UnsupportedOperationException("invalid event");
+        throw new UnsupportedOperationException("Invalid command");
     }
 
     public CounterEvent toEvent(EventLog dto) {
-        var fromJson = jsonUtil.deSerialize(dto.payload().asString(), dto.eventType());
-        if (fromJson instanceof IncrementedDto e) {
-            return new Incremented(e.amount());
-        } else if (fromJson instanceof DecrementedDto e) {
-            return new Decremented(e.amount());
+        try {
+            switch (dto.eventType()) {
+                case "CounterEvent.Incremented": {
+                    return objectMapper.readValue(dto.payload().asString(), Incremented.class);
+                }
+                case "CounterEvent.Decremented": {
+                    return objectMapper.readValue(dto.payload().asString(), Decremented.class);
+                }
+                default: {
+                    throw new UnsupportedOperationException("invalid event");
+                }
+            }
+        } catch (JsonMappingException e) {
+            throw new UnsupportedOperationException("invalid event", e);
+        } catch (JsonProcessingException e) {
+            throw new UnsupportedOperationException("invalid event", e);
         }
-        throw new UnsupportedOperationException("invalid event");
     }
 }

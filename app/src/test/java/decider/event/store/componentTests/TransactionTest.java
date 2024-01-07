@@ -9,8 +9,8 @@ import decider.event.store.AddingDecider;
 import decider.event.store.AddingDecider.GetDiff;
 import decider.event.store.CommandProcessor;
 import decider.event.store.CounterDecider;
+import decider.event.store.CounterDecider.Increment;
 import decider.event.store.DeciderMapper;
-import decider.event.store.Dtos;
 import decider.event.store.InfrastructureConfiguration;
 import decider.event.store.JsonUtil;
 import decider.event.store.NoDtoMapper;
@@ -104,7 +104,7 @@ public class TransactionTest {
         var elementCount = 200;
         var expected = 20100L; // for sum of 1 to 200
         var commands = Flux.range(1, elementCount).flatMapSequential(i -> {
-            var command = new Dtos.IncrementDto(i);
+            var command = new Increment(i);
             return storage.insertCommand(UUID.randomUUID(), command);
         });
         var insertDuration =
@@ -112,7 +112,7 @@ public class TransactionTest {
         System.out.println("insert duration " + insertDuration);
 
         var decider = new CounterDecider();
-        var dtoMapper = new DeciderMapper(jsonUtil);
+        var dtoMapper = new DeciderMapper(this.jsonUtil, this.objectMapper);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
                 .process()
@@ -142,7 +142,7 @@ public class TransactionTest {
         System.out.println("insert duration " + insertDuration);
 
         var decider = new AddingDecider();
-        var dtoMapper = new NoDtoMapper(jsonUtil);
+        var dtoMapper = new NoDtoMapper(jsonUtil, this.objectMapper);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
                 .process()

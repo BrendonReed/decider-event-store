@@ -15,13 +15,10 @@ public class CommandProcessor<C, E, S, CD, ED> {
     private Storage storage;
     private PubSubConnection pubSubConnection;
     private Decider<C, E, S> decider;
-    private DtoMapper<C, E, ED> dtoMapper;
+    private DtoMapper<C, E> dtoMapper;
 
     public CommandProcessor(
-            Storage storage,
-            PubSubConnection pubSubConnection,
-            Decider<C, E, S> decider,
-            DtoMapper<C, E, ED> dtoMapper) {
+            Storage storage, PubSubConnection pubSubConnection, Decider<C, E, S> decider, DtoMapper<C, E> dtoMapper) {
         this.storage = storage;
         this.pubSubConnection = pubSubConnection;
         this.decider = decider;
@@ -33,13 +30,13 @@ public class CommandProcessor<C, E, S, CD, ED> {
         var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
 
         log.info("Loading initial state");
-        var historicalEvents = storage.getEventsForStream2(streamId).map(dtoMapper::toEvent);
+        var historicalEvents = storage.getEventsForStream(streamId).map(dtoMapper::toEvent);
         var initialState = historicalEvents.reduce(decider.initialState(), (s, event) -> {
             return decider.apply(s, event);
         });
 
         var listener = pubSubConnection.registerListener("command_logged");
-        var allCommands = storage.getInifiteStreamOfUnprocessedCommands2(listener);
+        var allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);
         var run = initialState
                 .doOnTerminate(() -> {
                     Instant end = Instant.now();
@@ -74,7 +71,7 @@ public class CommandProcessor<C, E, S, CD, ED> {
                         var commandDto = tuple.getT1();
                         var disposition = tuple.getT2().commandDisposition();
                         var x = newEvents.stream();
-                        var eventDtos = x.map(e -> dtoMapper.toDTO(e)).toList();
+                        var eventDtos = x.map(e -> dtoMapper.serialize(e)).toList();
                         return disposition == "Success"
                                 ? storage.saveDto(commandDto.id(), eventDtos, streamId)
                                         .map(pc -> tuple.getT2().state())

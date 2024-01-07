@@ -33,6 +33,16 @@ public class JsonUtil {
         return null;
     }
 
+    public <ED> Json serialize(ED object) {
+        try {
+            byte[] jsonBytes = objectWriter.writeValueAsBytes(object);
+            var json = Json.of(jsonBytes);
+            return json;
+        } catch (JsonProcessingException e) {
+            throw new UnsupportedOperationException(e);
+        }
+    }
+
     public <ED> ToSerialize toJson(ED object) {
         try {
             byte[] jsonBytes = objectWriter.writeValueAsBytes(object);

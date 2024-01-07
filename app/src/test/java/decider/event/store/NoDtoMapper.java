@@ -1,5 +1,8 @@
 package decider.event.store;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.AddingDecider.AddingCommand;
 import decider.event.store.AddingDecider.AddingEvent;
 import decider.event.store.AddingDecider.DiffEvent;
@@ -7,16 +10,18 @@ import decider.event.store.AddingDecider.GetDiff;
 import decider.event.store.DbRecordTypes.CommandLog;
 import decider.event.store.DbRecordTypes.EventLog;
 
-public class NoDtoMapper implements DtoMapper<AddingCommand, AddingEvent, AddingEvent> {
+public class NoDtoMapper implements DtoMapper<AddingCommand, AddingEvent> {
 
     JsonUtil jsonUtil;
+    ObjectMapper objectMapper;
 
-    public NoDtoMapper(JsonUtil jsonUtil) {
+    public NoDtoMapper(JsonUtil jsonUtil, ObjectMapper objectMapper) {
         this.jsonUtil = jsonUtil;
+        this.objectMapper = objectMapper;
     }
 
-    public AddingEvent toDTO(AddingEvent event) {
-        return event;
+    public EventLog serialize(AddingEvent event) {
+        return new EventLog(null, null, "AddingEvent.DiffEvent", jsonUtil.serialize(event));
     }
 
     @Override
@@ -30,10 +35,18 @@ public class NoDtoMapper implements DtoMapper<AddingCommand, AddingEvent, Adding
 
     @Override
     public AddingEvent toEvent(EventLog dto) {
-        var x = jsonUtil.deSerialize(dto.payload().asString(), dto.eventType());
-        if (x instanceof GetDiff e) {
-            return new DiffEvent(e.toMatch());
+        try {
+            switch (dto.eventType()) {
+                case "AddingEvent.DiffEvent": {
+                    return objectMapper.readValue(dto.payload().asString(), DiffEvent.class);
+                }
+                default:
+                    throw new UnsupportedOperationException("Invalid event");
+            }
+        } catch (JsonMappingException e) {
+            throw new UnsupportedOperationException("invalid event", e);
+        } catch (JsonProcessingException e) {
+            throw new UnsupportedOperationException("invalid event", e);
         }
-        throw new UnsupportedOperationException("Invalid event");
     }
 }

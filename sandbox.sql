@@ -90,7 +90,7 @@ truncate command_log;
 INSERT INTO command_log (request_id, command_type, command)
 SELECT
     uuid_generate_v4(),
-    'decider.event.store.Dtos$IncrementDto',
+    'CounterCommand.Increment',
     ('{"amount": ' || generate_series || '}')::jsonb
 FROM generate_series(1, 100);
 

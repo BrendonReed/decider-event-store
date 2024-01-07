@@ -47,10 +47,17 @@ With dummy data for startup, too 30 seconds to startup with 1 million events.
 
 . [ ] retrying when database connection drops (network blip)
 . [ ] transaction on appending events and processed commands. Failure on any should rollback anything already done.
-. [ ] a failing command, so a domain with a business rule like numbers can only be odd.
+. [x] a failing command, so a domain with a business rule like numbers can only be odd.
+
+== Serialization
+
+We need to take the serialized values (Commands and Events) out of the database and map them to Domain Commands and Events.
+
+They're in the DB with a json data blob and a type to determine a target type to deserialize into. We could use the domain objects directly. 
+
+We can use reflection and Jackson to target the type generically. But then we still have to switch with an instanceOf to get the actual class to deserialize into. So why not just write out a mapping from stored event type to deserialize into the domain objects? Can still use object binding/mapping to avoid custom json code at least at first.
 
 == Next
-
 
 . Persist commands with envelope for storing success/failure.
 . Event materializer in another process
