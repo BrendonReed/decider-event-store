@@ -7,13 +7,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.AddingDecider;
 import decider.event.store.AddingDecider.GetDiff;
+import decider.event.store.AddingSerialization;
 import decider.event.store.CommandProcessor;
 import decider.event.store.CounterDecider;
 import decider.event.store.CounterDecider.Increment;
 import decider.event.store.CounterSerialization;
 import decider.event.store.InfrastructureConfiguration;
 import decider.event.store.JsonUtil;
-import decider.event.store.AddingSerialization;
 import decider.event.store.PubSubConnection;
 import decider.event.store.Storage;
 import java.time.LocalDateTime;
@@ -121,15 +121,16 @@ public class TransactionTest {
                     assertThat(lastState.totalCount()).isEqualTo(expected);
                 })
                 .verifyComplete();
-        
+
         // reload the state saved from before to verify (de)serialization
         var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
         var initialState = commandProcessor.loadInitialState(streamId);
-        initialState.as(StepVerifier::create)
-        .assertNext(lastState -> {
-            assertThat(lastState.totalCount()).isEqualTo(expected);
-        })
-        .verifyComplete();
+        initialState
+                .as(StepVerifier::create)
+                .assertNext(lastState -> {
+                    assertThat(lastState.totalCount()).isEqualTo(expected);
+                })
+                .verifyComplete();
     }
 
     @Test

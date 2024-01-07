@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,7 +19,10 @@ public class CommandProcessor<C, E, S> {
     private SerializationMapper<C, E> dtoMapper;
 
     public CommandProcessor(
-            Storage storage, PubSubConnection pubSubConnection, Decider<C, E, S> decider, SerializationMapper<C, E> dtoMapper) {
+            Storage storage,
+            PubSubConnection pubSubConnection,
+            Decider<C, E, S> decider,
+            SerializationMapper<C, E> dtoMapper) {
         this.storage = storage;
         this.pubSubConnection = pubSubConnection;
         this.decider = decider;

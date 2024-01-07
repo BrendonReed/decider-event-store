@@ -1,6 +1,5 @@
 package decider.event.store;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.AddingDecider.AddingCommand;
 import decider.event.store.AddingDecider.AddingEvent;
 import decider.event.store.AddingDecider.DiffEvent;

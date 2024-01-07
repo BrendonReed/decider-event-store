@@ -38,8 +38,7 @@ public class CounterSerialization implements SerializationMapper<CounterCommand,
         var x = jsonUtil.deSerialize(dto.command().asString(), dto.commandType());
         if (x instanceof Increment e) {
             return new Increment(e.amount());
-        }
-        else if (x instanceof Decrement e) {
+        } else if (x instanceof Decrement e) {
             return new Decrement(e.amount());
         }
         throw new UnsupportedOperationException("Invalid command");
@@ -49,8 +48,7 @@ public class CounterSerialization implements SerializationMapper<CounterCommand,
         var x = jsonUtil.deSerialize(dto.payload().asString(), dto.eventType());
         if (x instanceof Incremented e) {
             return e;
-        }
-        else if (x instanceof Decremented e) {
+        } else if (x instanceof Decremented e) {
             return e;
         }
         throw new UnsupportedOperationException("Error deserializing event");
