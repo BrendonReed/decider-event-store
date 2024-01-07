@@ -29,9 +29,9 @@ public class CommandProcessor<C, E, S> {
         this.dtoMapper = dtoMapper;
     }
 
-    public Mono<S> loadInitialState(UUID streamId) {
+    public Mono<S> loadInitialState() {
         log.info("Loading initial state");
-        var historicalEvents = storage.getEventsForStream(streamId).map(dtoMapper::toEvent);
+        var historicalEvents = storage.getAllEvents().map(dtoMapper::toEvent);
         return historicalEvents.reduce(decider.initialState(), (s, event) -> {
             return decider.apply(s, event);
         });
@@ -39,9 +39,8 @@ public class CommandProcessor<C, E, S> {
 
     public Flux<S> process() {
         Instant start = Instant.now();
-        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
 
-        var initialState = loadInitialState(streamId);
+        var initialState = loadInitialState();
 
         var listener = pubSubConnection.registerListener("command_logged");
         var allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);
@@ -79,9 +78,9 @@ public class CommandProcessor<C, E, S> {
                         var commandDto = tuple.getT1();
                         var disposition = tuple.getT2().commandDisposition();
                         var x = newEvents.stream();
-                        var eventDtos = x.map(e -> dtoMapper.serialize(e, streamId)).toList();
+                        var eventDtos = x.map(e -> dtoMapper.serialize(e)).toList();
                         return disposition == "Success"
-                                ? storage.saveDto(commandDto.id(), eventDtos, streamId)
+                                ? storage.saveDto(commandDto.id(), eventDtos)
                                         .map(pc -> tuple.getT2().state())
                                 : storage.saveFailedCommand(commandDto.id())
                                         .map(pc -> tuple.getT2().state());

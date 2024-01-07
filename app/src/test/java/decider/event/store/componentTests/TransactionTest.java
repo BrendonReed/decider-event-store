@@ -99,10 +99,11 @@ public class TransactionTest {
     @Test
     void ArithmeticSequence() throws JsonProcessingException {
         // var expected = 500501L; // for sum of 1 to 1000
+        var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A");
         var elementCount = 200;
         var expected = 20100L; // for sum of 1 to 200
         var commands = Flux.range(1, elementCount).flatMapSequential(i -> {
-            var command = new Increment(i);
+            var command = new Increment(i, streamId);
             return storage.insertCommand(UUID.randomUUID(), command);
         });
         var insertDuration =
@@ -123,8 +124,7 @@ public class TransactionTest {
                 .verifyComplete();
 
         // reload the state saved from before to verify (de)serialization
-        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
-        var initialState = commandProcessor.loadInitialState(streamId);
+        var initialState = commandProcessor.loadInitialState();
         initialState
                 .as(StepVerifier::create)
                 .assertNext(lastState -> {

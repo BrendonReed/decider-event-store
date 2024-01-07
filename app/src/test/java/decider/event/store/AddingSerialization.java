@@ -6,7 +6,6 @@ import decider.event.store.AddingDecider.DiffEvent;
 import decider.event.store.AddingDecider.GetDiff;
 import decider.event.store.DbRecordTypes.CommandLog;
 import decider.event.store.DbRecordTypes.EventLog;
-import java.util.UUID;
 
 public class AddingSerialization implements SerializationMapper<AddingCommand, AddingEvent> {
 
@@ -16,10 +15,10 @@ public class AddingSerialization implements SerializationMapper<AddingCommand, A
         this.jsonUtil = jsonUtil;
     }
 
-    public EventLog serialize(AddingEvent event, UUID streamId) {
+    public EventLog serialize(AddingEvent event) {
         var asJson = jsonUtil.serialize(event);
         var eventType = event.getClass().getName();
-        return new EventLog(null, streamId, eventType, asJson);
+        return new EventLog(null, null, eventType, asJson);
     }
 
     @Override

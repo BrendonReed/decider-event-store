@@ -53,13 +53,12 @@ With dummy data for startup, too 30 seconds to startup with 1 million events.
 
 We need to take the serialized values (Commands and Events) out of the database and map them to Domain Commands and Events.
 
-They're in the DB with a json data blob and a type to determine a target type to deserialize into. We could use the domain objects directly. 
+The approach is general. Something must be provided that maps to/from the database types and domain types. A event or command must be persisted with a tag used to identify what type to deserialize it into. The example domain serializes the domain types directly, using reflection with jackson. This is very little boilerplate, but frequently a separate DTO/format for serialization is beneficial, especially when publishing events to avoid coupling domain types to the wire format. It's completely viable to use separate DTOS or to map from the json without or without a DTO.
 
-We can use reflection and Jackson to target the type generically. But then we still have to switch with an instanceOf to get the actual class to deserialize into. So why not just write out a mapping from stored event type to deserialize into the domain objects? Can still use object binding/mapping to avoid custom json code at least at first.
-
+In a similar vein, the opinionated choice to include a tenantId an a streamId as top level elements for event and command storage. If not desired, they can be null/defaulted by the Serializer.
 == Next
 
-. Persist commands with envelope for storing success/failure.
+. [x] Persist commands with envelope for storing success/failure.
 . Event materializer in another process
 . GraphQL based interface instead of CLI
 . Show concurrency scenario - course subscription + course capacity change

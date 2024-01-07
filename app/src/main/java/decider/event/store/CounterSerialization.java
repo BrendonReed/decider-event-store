@@ -20,10 +20,10 @@ public class CounterSerialization implements SerializationMapper<CounterCommand,
         this.jsonUtil = jsonUtil;
     }
 
-    public EventLog serialize(CounterEvent entity, UUID streamId) {
+    public EventLog serialize(CounterEvent entity) {
         var eventType = entity.getClass().getName();
         var asJson = jsonUtil.serialize(entity);
-        return new EventLog(null, streamId, eventType, asJson);
+        return new EventLog(null, entity.streamId(), eventType, asJson);
     }
 
     public CounterCommand toCommand(CommandLog dto) {
@@ -32,9 +32,9 @@ public class CounterSerialization implements SerializationMapper<CounterCommand,
         // in this case we trust the data stored in DB
         var x = jsonUtil.deSerialize(dto.command().asString(), dto.commandType());
         if (x instanceof Increment e) {
-            return new Increment(e.amount());
+            return e;
         } else if (x instanceof Decrement e) {
-            return new Decrement(e.amount());
+            return e;
         }
         throw new UnsupportedOperationException("Invalid command");
     }

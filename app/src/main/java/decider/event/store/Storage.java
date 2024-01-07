@@ -32,7 +32,7 @@ public class Storage {
         this.jsonUtil = jsonUtil;
     }
 
-    public Flux<EventLog> getEventsForStream(UUID streamId) {
+    public Flux<EventLog> getAllEvents() {
         return template.select(EventLog.class)
                 .from("event_log")
                 // .matching(query(where("stream_id").is(streamId)))
@@ -81,7 +81,7 @@ public class Storage {
 
     // TODO: add test to make sure the transaction works.
     @Transactional
-    public <ED> Mono<ProcessedCommand> saveDto(Long commandLogId, List<EventLog> events, UUID streamId) {
+    public <ED> Mono<ProcessedCommand> saveDto(Long commandLogId, List<EventLog> events) {
         // because of the way stream is processed, it's possible to have duplicates
         // so it's important that this process is idempotent, so if the command
         // has already been processed, then just skip it.
