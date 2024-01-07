@@ -18,7 +18,7 @@ public class AddingSerialization implements SerializationMapper<AddingCommand, A
     public EventLog serialize(AddingEvent event) {
         var asJson = jsonUtil.serialize(event);
         var eventType = event.getClass().getName();
-        return new EventLog(null, null, eventType, asJson);
+        return new EventLog(null, 0L, null, eventType, asJson);
     }
 
     @Override

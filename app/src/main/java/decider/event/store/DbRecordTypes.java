@@ -6,7 +6,7 @@ import org.springframework.data.annotation.Id;
 
 public class DbRecordTypes {
 
-    public record EventLog(@Id Long id, UUID streamId, String eventType, Json payload) {}
+    public record EventLog(@Id Long id, Long tenantId, UUID streamId, String eventType, Json payload) {}
 
     public record CommandLog(@Id Long id, UUID requestId, String commandType, Json command) {}
 

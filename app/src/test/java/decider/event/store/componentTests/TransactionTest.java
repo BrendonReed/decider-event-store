@@ -103,7 +103,7 @@ public class TransactionTest {
         var elementCount = 200;
         var expected = 20100L; // for sum of 1 to 200
         var commands = Flux.range(1, elementCount).flatMapSequential(i -> {
-            var command = new Increment(i, streamId);
+            var command = new Increment(i, 1L, streamId);
             return storage.insertCommand(UUID.randomUUID(), command);
         });
         var insertDuration =

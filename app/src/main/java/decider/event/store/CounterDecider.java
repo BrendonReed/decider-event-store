@@ -31,29 +31,30 @@ public class CounterDecider
         List<? extends CounterEvent> mutate(CounterState state);
     }
 
-    public record Increment(long amount, UUID streamId) implements CounterCommand {
+    public record Increment(long amount, Long tenantId, UUID streamId) implements CounterCommand {
 
         @Override
         public List<? extends CounterEvent> mutate(CounterState state) {
-            return List.of(new Incremented(amount, streamId));
+            return List.of(new Incremented(amount, tenantId, streamId));
         }
     }
 
-    public record Decrement(long amount, UUID streamId) implements CounterCommand {
+    public record Decrement(long amount, Long tenantId, UUID streamId) implements CounterCommand {
 
         @Override
         public List<? extends CounterEvent> mutate(CounterState state) {
-            return List.of(new Decremented(amount, streamId));
+            return List.of(new Decremented(amount, tenantId, streamId));
         }
     }
 
     // events
     public interface CounterEvent {
         UUID streamId();
+        Long tenantId();
         CounterState apply(CounterState currentState);
     }
 
-    public record Incremented(long amount, UUID streamId) implements CounterEvent {
+    public record Incremented(long amount, Long tenantId, UUID streamId) implements CounterEvent {
 
         @Override
         public CounterState apply(CounterState currentState) {
@@ -61,7 +62,7 @@ public class CounterDecider
         }
     }
 
-    public record Decremented(long amount, UUID streamId) implements CounterEvent {
+    public record Decremented(long amount, Long tenantId, UUID streamId) implements CounterEvent {
 
         @Override
         public CounterState apply(CounterState currentState) {

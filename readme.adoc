@@ -55,7 +55,8 @@ We need to take the serialized values (Commands and Events) out of the database 
 
 The approach is general. Something must be provided that maps to/from the database types and domain types. A event or command must be persisted with a tag used to identify what type to deserialize it into. The example domain serializes the domain types directly, using reflection with jackson. This is very little boilerplate, but frequently a separate DTO/format for serialization is beneficial, especially when publishing events to avoid coupling domain types to the wire format. It's completely viable to use separate DTOS or to map from the json without or without a DTO.
 
-In a similar vein, the opinionated choice to include a tenantId an a streamId as top level elements for event and command storage. If not desired, they can be null/defaulted by the Serializer.
+In a similar vein, the opinionated choice to include a tenantId an a streamId as top level elements for event and command storage. If not desired, they can be null/defaulted by the Serializer. These are used for concurrency or potentially for multiple command processors.
+
 == Next
 
 . [x] Persist commands with envelope for storing success/failure.

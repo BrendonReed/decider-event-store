@@ -9,7 +9,6 @@ import decider.event.store.CounterDecider.Incremented;
 import decider.event.store.DbRecordTypes.CommandLog;
 import decider.event.store.DbRecordTypes.EventLog;
 import lombok.extern.slf4j.Slf4j;
-import java.util.UUID;
 
 @Slf4j
 public class CounterSerialization implements SerializationMapper<CounterCommand, CounterEvent> {
@@ -23,7 +22,7 @@ public class CounterSerialization implements SerializationMapper<CounterCommand,
     public EventLog serialize(CounterEvent entity) {
         var eventType = entity.getClass().getName();
         var asJson = jsonUtil.serialize(entity);
-        return new EventLog(null, entity.streamId(), eventType, asJson);
+        return new EventLog(null, entity.tenantId(), entity.streamId(), eventType, asJson);
     }
 
     public CounterCommand toCommand(CommandLog dto) {
