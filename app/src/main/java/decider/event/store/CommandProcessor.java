@@ -79,7 +79,7 @@ public class CommandProcessor<C, E, S> {
                         var commandDto = tuple.getT1();
                         var disposition = tuple.getT2().commandDisposition();
                         var x = newEvents.stream();
-                        var eventDtos = x.map(e -> dtoMapper.serialize(e)).toList();
+                        var eventDtos = x.map(e -> dtoMapper.serialize(e, streamId)).toList();
                         return disposition == "Success"
                                 ? storage.saveDto(commandDto.id(), eventDtos, streamId)
                                         .map(pc -> tuple.getT2().state())
