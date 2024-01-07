@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 record DecisionResult<S, E>(S state, List<? extends E> newEvents, String commandDisposition) {}
 
@@ -26,15 +27,19 @@ public class CommandProcessor<C, E, S> {
         this.dtoMapper = dtoMapper;
     }
 
+    public Mono<S> loadInitialState(UUID streamId) {
+        log.info("Loading initial state");
+        var historicalEvents = storage.getEventsForStream(streamId).map(dtoMapper::toEvent);
+        return historicalEvents.reduce(decider.initialState(), (s, event) -> {
+            return decider.apply(s, event);
+        });
+    }
+
     public Flux<S> process() {
         Instant start = Instant.now();
         var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
 
-        log.info("Loading initial state");
-        var historicalEvents = storage.getEventsForStream(streamId).map(dtoMapper::toEvent);
-        var initialState = historicalEvents.reduce(decider.initialState(), (s, event) -> {
-            return decider.apply(s, event);
-        });
+        var initialState = loadInitialState(streamId);
 
         var listener = pubSubConnection.registerListener("command_logged");
         var allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);

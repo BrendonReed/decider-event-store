@@ -11,11 +11,9 @@ import decider.event.store.DbRecordTypes.EventLog;
 public class AddingSerialization implements SerializationMapper<AddingCommand, AddingEvent> {
 
     JsonUtil jsonUtil;
-    ObjectMapper objectMapper;
 
-    public AddingSerialization(JsonUtil jsonUtil, ObjectMapper objectMapper) {
+    public AddingSerialization(JsonUtil jsonUtil) {
         this.jsonUtil = jsonUtil;
-        this.objectMapper = objectMapper;
     }
 
     public EventLog serialize(AddingEvent event) {

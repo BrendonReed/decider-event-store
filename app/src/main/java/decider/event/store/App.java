@@ -42,7 +42,7 @@ public class App implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         var decider = new CounterDecider();
-        var dtoMapper = new CounterSerialization(jsonUtil, objectMapper);
+        var dtoMapper = new CounterSerialization(jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         var run = commandProcessor.process();
         run.blockLast(Duration.ofMinutes(400));

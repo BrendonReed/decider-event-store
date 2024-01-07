@@ -68,8 +68,6 @@ public class TransactionTest {
 
     @BeforeEach
     public void runFlywayMigrations() {
-        // postgresContainer.start(); // Ensure the container is started explicitly
-
         // Obtain the base directory of the project
         String baseDir = System.getProperty("user.dir");
 
@@ -112,7 +110,7 @@ public class TransactionTest {
         System.out.println("insert duration " + insertDuration);
 
         var decider = new CounterDecider();
-        var dtoMapper = new CounterSerialization(this.jsonUtil, this.objectMapper);
+        var dtoMapper = new CounterSerialization(this.jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
                 .process()
@@ -123,6 +121,15 @@ public class TransactionTest {
                     assertThat(lastState.totalCount()).isEqualTo(expected);
                 })
                 .verifyComplete();
+        
+        // reload the state saved from before to verify (de)serialization
+        var streamId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
+        var initialState = commandProcessor.loadInitialState(streamId);
+        initialState.as(StepVerifier::create)
+        .assertNext(lastState -> {
+            assertThat(lastState.totalCount()).isEqualTo(expected);
+        })
+        .verifyComplete();
     }
 
     @Test
@@ -142,7 +149,7 @@ public class TransactionTest {
         System.out.println("insert duration " + insertDuration);
 
         var decider = new AddingDecider();
-        var dtoMapper = new AddingSerialization(jsonUtil, this.objectMapper);
+        var dtoMapper = new AddingSerialization(jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
                 .process()

@@ -1,6 +1,5 @@
 package decider.event.store;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.CounterDecider.CounterCommand;
 import decider.event.store.CounterDecider.CounterEvent;
 import decider.event.store.CounterDecider.Decrement;
@@ -14,11 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CounterSerialization implements SerializationMapper<CounterCommand, CounterEvent> {
 
-    private final ObjectMapper objectMapper;
     private final JsonUtil jsonUtil;
 
-    public CounterSerialization(JsonUtil jsonUtil, ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public CounterSerialization(JsonUtil jsonUtil) {
         this.jsonUtil = jsonUtil;
     }
 
