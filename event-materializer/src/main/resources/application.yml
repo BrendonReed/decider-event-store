@@ -1,0 +1,15 @@
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5402/postgres
+    username: postgres
+    password: password
+    pool:
+      initial-size: 5
+      max-size: 10
+      max-idle-time: 30000
+      enabled: true
+  main:
+    web-application-type: NONE
+logging:
+  level:
+    decider.event.store: DEBUG

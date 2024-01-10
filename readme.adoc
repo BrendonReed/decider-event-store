@@ -39,7 +39,7 @@ Currently it combines a subscription to inserts on the command table, which give
 
 |===
 
-too ~34 minutes to do 100,000 commands. 
+took ~34 minutes to do 100,000 commands. 
 
 With dummy data for startup, too 30 seconds to startup with 1 million events.
 
@@ -64,6 +64,10 @@ In a similar vein, the opinionated choice to include a tenantId an a streamId as
 . GraphQL based interface instead of CLI
 . Show concurrency scenario - course subscription + course capacity change
 . Show read after write consistency
+
+== Courses
+
+Command 
 
 == More fun domains?
 
