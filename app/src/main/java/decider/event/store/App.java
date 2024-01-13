@@ -45,7 +45,7 @@ public class App implements CommandLineRunner {
         var dtoMapper = new CounterSerialization(jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         var run = commandProcessor.process();
-        run.blockLast(Duration.ofMinutes(400));
+        run.blockLast();
     }
 
     public void cliInput() {
