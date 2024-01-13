@@ -2,8 +2,7 @@ package decider.event.store;
 
 import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 @Slf4j
 public class EventMaterializer<S, E> {
@@ -26,8 +25,7 @@ public class EventMaterializer<S, E> {
     // save new state
     // update checkpoints
 
-    @Transactional
-    public Mono<S> next(BiFunction<S, E, S> accumulator) {
+    public Flux<S> next(BiFunction<S, E, S> accumulator) {
         // TODO: setting checkpoint and saving state should be transactional
         log.debug("materializing from: {}", checkpoint);
         // TODO: join event query to processed command log to provide consistency
@@ -35,10 +33,15 @@ public class EventMaterializer<S, E> {
         // to avoid an inconsistent view where not all events for a command are processed
         var dbEvents = storage.getLatestEvents(checkpoint);
         var mapped = dbEvents.map(mapper::toEvent);
-        var newState = mapped.reduce(this.state, accumulator).flatMap(s -> {
-            this.state = s;
-            return storage.template.update(s);
+        var newStates = mapped.scan(this.state, accumulator)
+                .skip(1); // skip because scan emits for the inital state, which we don't want to process
+        var save = Flux.zip(dbEvents, newStates).concatMap(tuple -> {
+            var nextState = tuple.getT2();
+            var eventDto = tuple.getT1();
+            this.state = nextState;
+            checkpoint = eventDto.id();
+            return storage.saveStateAndCheckpoint(checkpoint, state);
         });
-        return newState;
+        return save;
     }
 }

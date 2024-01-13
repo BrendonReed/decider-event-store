@@ -3,6 +3,7 @@ package decider.event.store;
 import static org.springframework.data.relational.core.query.Criteria.*;
 import static org.springframework.data.relational.core.query.Query.*;
 
+import decider.event.store.DbRecordTypes.CounterCheckpoint;
 import decider.event.store.DbRecordTypes.EventLog;
 import io.r2dbc.postgresql.api.Notification;
 import java.time.Duration;
@@ -14,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
@@ -27,6 +30,11 @@ public class Storage {
     public Storage(R2dbcEntityTemplate template, JsonUtil jsonUtil) {
         this.template = template;
         this.jsonUtil = jsonUtil;
+    }
+
+    @Transactional
+    public <S> Mono<S> saveStateAndCheckpoint(Long checkpoint, S nextState) {
+        return this.template.update(new CounterCheckpoint(1L, checkpoint)).flatMap(c -> this.template.update(nextState));
     }
 
     public Flux<EventLog> getAllEvents() {

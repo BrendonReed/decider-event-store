@@ -31,9 +31,10 @@ create table processed_command (
 );
 
 create table counter_checkpoint (
+  id bigint primary key,
   event_log_id bigint
 );
-insert into counter_checkpoint (event_log_id) values (0);
+insert into counter_checkpoint (id, event_log_id) values (1, 0);
 
 create table counter_state (
   id uuid,

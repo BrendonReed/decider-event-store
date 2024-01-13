@@ -54,6 +54,6 @@ public class App implements CommandLineRunner {
         // });
         // run.blockLast(Duration.ofMinutes(4000));
         var run = materializer.next(rm::apply);
-        run.block();
+        run.blockLast();
     }
 }
