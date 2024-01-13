@@ -30,6 +30,9 @@ public class EventMaterializer<S, E> {
     public Mono<S> next(BiFunction<S, E, S> accumulator) {
         // TODO: setting checkpoint and saving state should be transactional
         log.debug("materializing from: {}", checkpoint);
+        // TODO: join event query to processed command log to provide consistency
+        // If a command emits multiple events, processes those events transactionally
+        // to avoid an inconsistent view where not all events for a command are processed
         var dbEvents = storage.getLatestEvents(checkpoint);
         var mapped = dbEvents.map(mapper::toEvent);
         var newState = mapped.reduce(this.state, accumulator).flatMap(s -> {
