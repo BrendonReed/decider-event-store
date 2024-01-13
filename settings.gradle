@@ -14,4 +14,5 @@ rootProject.name = 'decider-event-store'
 //include('lib')
 include('app')
 include('event-materializer')
+include('io')
 //include('command-processor')
