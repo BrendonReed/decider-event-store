@@ -34,7 +34,9 @@ public class Storage {
 
     @Transactional
     public <S> Mono<S> saveStateAndCheckpoint(Long checkpoint, S nextState) {
-        return this.template.update(new CounterCheckpoint(1L, checkpoint)).flatMap(c -> this.template.update(nextState));
+        return this.template
+                .update(new CounterCheckpoint(1L, checkpoint))
+                .flatMap(c -> this.template.update(nextState));
     }
 
     public Flux<EventLog> getAllEvents() {
@@ -55,15 +57,34 @@ public class Storage {
                 .all();
     }
 
-    public Flux<EventLog> getInifiteStreamOfUnprocessedEvents(Flux<Notification> sub, Long latestEvent) {
+    public Flux<EventLog> getEvents(int batchSize) {
+        var sql =
+                """
+            SELECT event_log.*
+            FROM event_log
+            WHERE event_log.id > (SELECT event_log_id FROM counter_checkpoint LIMIT 1)
+            limit :batchSize
+            """;
+        return template.getDatabaseClient()
+                .sql(sql)
+                .bind("batchSize", batchSize)
+                .map((row, metadata) -> {
+                    EventLog command = template.getConverter().read(EventLog.class, row, metadata);
+                    return command;
+                })
+                .all();
+    }
 
+    public Flux<EventLog> getInifiteStreamOfUnprocessedEvents(Flux<Notification> sub) {
+
+        var batchSize = 100;
         var pollingInterval = Duration.ofSeconds(2);
         var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
-        return getLatestEvents(latestEvent)
+        return getEvents(batchSize)
                 .concatWith(triggers.onBackpressureDrop(data -> {
                             log.debug("dropping");
                         })
-                        .concatMap(t -> getLatestEvents(latestEvent)))
+                        .concatMap(t -> getEvents(batchSize)))
                 .doOnError(error -> {
                     // Log details when an error occurs
                     log.error("Error occurred: {}", error.getMessage());

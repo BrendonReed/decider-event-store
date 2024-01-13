@@ -45,7 +45,7 @@ public class App implements CommandLineRunner {
         var stateId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
         var startState = new CounterState(stateId, 0);
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
-        var materializer = new EventMaterializer<CounterState, CounterEvent>(storage, mapper, startState);
+        var materializer = new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, startState);
         var rm = new CounterReadModel();
         // var run = pubSubConnection.registerListener("event_updated").flatMap(x -> {
         //    String streamId = Utils.unsafeExtract(x.getParameter());

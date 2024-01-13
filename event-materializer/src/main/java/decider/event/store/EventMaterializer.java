@@ -8,12 +8,15 @@ import reactor.core.publisher.Flux;
 public class EventMaterializer<S, E> {
     public Storage storage;
     private SerializationMapper<E> mapper;
+    private PubSubConnection pubSubConnection;
 
-    public EventMaterializer(Storage storage, SerializationMapper<E> mapper, S initialState) {
+    public EventMaterializer(
+            Storage storage, PubSubConnection pubSubConnection, SerializationMapper<E> mapper, S initialState) {
         this.storage = storage;
         this.checkpoint = 0L;
         this.state = initialState;
         this.mapper = mapper;
+        this.pubSubConnection = pubSubConnection;
     }
 
     public Long checkpoint;
@@ -31,7 +34,8 @@ public class EventMaterializer<S, E> {
         // TODO: join event query to processed command log to provide consistency
         // If a command emits multiple events, processes those events transactionally
         // to avoid an inconsistent view where not all events for a command are processed
-        var dbEvents = storage.getLatestEvents(checkpoint);
+        var listener = pubSubConnection.registerListener("event_logged");
+        var dbEvents = storage.getInifiteStreamOfUnprocessedEvents(listener);
         var mapped = dbEvents.map(mapper::toEvent);
         var newStates = mapped.scan(this.state, accumulator)
                 .skip(1); // skip because scan emits for the inital state, which we don't want to process
