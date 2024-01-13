@@ -43,7 +43,7 @@ public class Storage {
         Criteria combinedCriteria = criteriaList.stream().reduce(Criteria.empty(), Criteria::and, Criteria::and);
         return template.select(EventLog.class)
                 .from("event_log")
-                //.matching(query(combinedCriteria))
+                // .matching(query(combinedCriteria))
                 .all();
     }
 

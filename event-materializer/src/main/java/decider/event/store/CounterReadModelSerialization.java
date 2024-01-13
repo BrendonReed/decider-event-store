@@ -2,7 +2,6 @@ package decider.event.store;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import decider.event.store.CounterReadModel.CounterEvent;
 import decider.event.store.CounterReadModel.Decremented;
 import decider.event.store.CounterReadModel.Incremented;

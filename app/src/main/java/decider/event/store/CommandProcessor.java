@@ -1,5 +1,6 @@
 package decider.event.store;
 
+import decider.event.store.DbRecordTypes.CommandLog;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -54,38 +55,38 @@ public class CommandProcessor<C, E, S> {
 
                     var startState = new DecisionResult<S, E>(state, new ArrayList<>(), null);
                     Flux<DecisionResult<S, E>> states = allCommands
-                            .scan(startState, (acc, commandDto) -> {
-                                var command = commandDto;
-                                // could throw an IllegalStateException if this command violates business rules.
-                                try {
-                                    var domainCommand = dtoMapper.toCommand(command);
-                                    var newEvents = decider.mutate(acc.state(), domainCommand);
-                                    var newState = Utils.fold(acc.state(), newEvents, decider::apply);
-                                    log.debug("current state: {}", newState);
-                                    return new DecisionResult<S, E>(newState, newEvents, "Success");
-                                } catch (RuntimeException e) {
-                                    log.debug("caught business rule failure: {}", e.getLocalizedMessage());
-                                    return new DecisionResult<S, E>(acc.state(), new ArrayList<>(), "Failure");
-                                }
-                            })
+                            .scan(startState, this::accumulate)
                             .skip(1); // skip because scan emits for the inital state, which we don't want to process
                     var eventLog = Flux.zip(allCommands, states).concatMap(tuple -> {
-                        // options -
-                        // . different save call for failure, pulling event_id on demand?
-                        // . use scan to track previous command?
-                        var newEvents = tuple.getT2().newEvents();
                         var commandDto = tuple.getT1();
+                        var newEvents = tuple.getT2().newEvents();
                         var disposition = tuple.getT2().commandDisposition();
-                        var x = newEvents.stream();
-                        var eventDtos = x.map(e -> dtoMapper.serialize(e)).toList();
-                        return disposition == "Success"
-                                ? storage.saveDto(commandDto.id(), eventDtos)
-                                        .map(pc -> tuple.getT2().state())
-                                : storage.saveFailedCommand(commandDto.id())
-                                        .map(pc -> tuple.getT2().state());
+                        var nextState = tuple.getT2().state();
+                        return saveNext(commandDto, disposition, newEvents, nextState);
                     });
                     return eventLog;
                 });
         return run;
+    }
+
+    private DecisionResult<S, E> accumulate(DecisionResult<S, E> acc, CommandLog command) {
+        try {
+            var domainCommand = dtoMapper.toCommand(command);
+            var newEvents = decider.mutate(acc.state(), domainCommand);
+            var newState = Utils.fold(acc.state(), newEvents, decider::apply);
+            log.debug("current state: {}", newState);
+            return new DecisionResult<S, E>(newState, newEvents, "Success");
+        } catch (RuntimeException e) {
+            log.debug("caught business rule failure: {}", e.getLocalizedMessage());
+            return new DecisionResult<S, E>(acc.state(), new ArrayList<>(), "Failure");
+        }
+    }
+
+    private Mono<S> saveNext(CommandLog commandDto, String disposition, List<? extends E> newEvents, S nextState) {
+        var x = newEvents.stream();
+        var eventDtos = x.map(e -> dtoMapper.serialize(e)).toList();
+        return disposition == "Success"
+                ? storage.saveDto(commandDto.id(), eventDtos).map(pc -> nextState)
+                : storage.saveFailedCommand(commandDto.id()).map(pc -> nextState);
     }
 }

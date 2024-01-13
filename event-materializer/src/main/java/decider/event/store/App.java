@@ -3,9 +3,7 @@ package decider.event.store;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.CounterReadModel.CounterEvent;
 import decider.event.store.CounterReadModel.CounterState;
-import java.time.Duration;
 import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -49,14 +47,13 @@ public class App implements CommandLineRunner {
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
         var materializer = new EventMaterializer<CounterState, CounterEvent>(storage, mapper, startState);
         var rm = new CounterReadModel();
-        //var run = pubSubConnection.registerListener("event_updated").flatMap(x -> {
+        // var run = pubSubConnection.registerListener("event_updated").flatMap(x -> {
         //    String streamId = Utils.unsafeExtract(x.getParameter());
         //    // get stored events, materialize a view and store it
         //    return materializer.next(rm::apply);
-        //});
+        // });
         // run.blockLast(Duration.ofMinutes(4000));
         var run = materializer.next(rm::apply);
         run.block();
-
     }
 }
