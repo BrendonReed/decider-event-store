@@ -8,12 +8,9 @@ import decider.event.store.DbRecordTypes.EventLog;
 import io.r2dbc.postgresql.api.Notification;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
-import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -37,24 +34,6 @@ public class Storage {
         return this.template
                 .update(new CounterCheckpoint(1L, checkpoint))
                 .flatMap(c -> this.template.update(nextState));
-    }
-
-    public Flux<EventLog> getAllEvents() {
-        return template.select(EventLog.class)
-                .from("event_log")
-                // .matching(query(where("stream_id").is(streamId)))
-                .all();
-    }
-
-    public Flux<EventLog> getLatestEvents(Long latestEvent) {
-        List<Criteria> criteriaList = new ArrayList<>();
-
-        criteriaList.add(where("id").greaterThan(latestEvent));
-        Criteria combinedCriteria = criteriaList.stream().reduce(Criteria.empty(), Criteria::and, Criteria::and);
-        return template.select(EventLog.class)
-                .from("event_log")
-                // .matching(query(combinedCriteria))
-                .all();
     }
 
     public Flux<EventLog> getEvents(int batchSize) {

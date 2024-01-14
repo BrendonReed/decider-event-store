@@ -14,6 +14,7 @@ select now();
 delete from event_log;
 
 select * from counter_state;
+delete from counter_state where id is null;
 
 select * from event_log
 order by id;
@@ -66,6 +67,8 @@ select count(*) from event_log;
 select * from command_log order by id;
 select * from processed_command order by command_id;
 select * from event_log order by id;
+select * from counter_state;
+select * from counter_checkpoint;
 
 select now()
 
@@ -92,12 +95,17 @@ SELECT
     uuid_generate_v4(),
     'decider.event.store.CounterDecider$Increment',
     ('{"amount": ' || generate_series || ', "streamId": "3BE87B37-B538-40BC-A53C-24A630BFFA2A", "tenantId": 1 }')::jsonb
-FROM generate_series(1, 10);
+FROM generate_series(11, 20);
 
 select uuid_generate_v4() command_id, generate_series id
-FROM generate_series(1, 10);
+FROM generate_series(11, 20);
 SELECT
     '4498a039-ce94-49b2-aff9-3ca12a8623d5',
     now(),
     'decider.event.store.CounterDecider$Increment',
     ('{"amount": ' || '1' || '}')::jsonb id
+
+SELECT event_log.*
+FROM event_log
+WHERE event_log.id > (SELECT event_log_id FROM counter_checkpoint LIMIT 1)
+limit 100
