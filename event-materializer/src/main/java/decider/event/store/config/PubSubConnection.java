@@ -1,4 +1,4 @@
-package decider.event.store;
+package decider.event.store.config;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
@@ -28,7 +28,7 @@ public class PubSubConnection {
         options.put("lock_timeout", "10s");
         this.connectionFactory = new PostgresqlConnectionFactory(PostgresqlConnectionConfiguration.builder()
                 .host(host)
-                .port(5402) // optional, defaults to 5432
+                .port(port) // optional, defaults to 5432
                 .username(username)
                 .password(password)
                 .database(database) // optional

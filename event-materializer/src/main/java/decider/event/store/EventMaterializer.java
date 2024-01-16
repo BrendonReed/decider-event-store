@@ -1,6 +1,8 @@
 package decider.event.store;
 
 import java.util.function.BiFunction;
+
+import decider.event.store.config.PubSubConnection;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
@@ -29,7 +31,6 @@ public class EventMaterializer<S, E> {
     // update checkpoints
 
     public Flux<S> next(BiFunction<S, E, S> accumulator) {
-        // TODO: setting checkpoint and saving state should be transactional
         log.debug("materializing from: {}", checkpoint);
         // TODO: join event query to processed command log to provide consistency
         // If a command emits multiple events, processes those events transactionally

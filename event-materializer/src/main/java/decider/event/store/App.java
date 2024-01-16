@@ -3,6 +3,8 @@ package decider.event.store;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.CounterReadModel.CounterEvent;
 import decider.event.store.CounterReadModel.CounterState;
+import decider.event.store.config.PubSubConnection;
+
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

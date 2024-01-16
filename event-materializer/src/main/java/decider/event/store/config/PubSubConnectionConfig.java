@@ -1,4 +1,4 @@
-package decider.event.store;
+package decider.event.store.config;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;

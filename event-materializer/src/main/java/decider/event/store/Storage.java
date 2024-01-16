@@ -21,12 +21,10 @@ import reactor.core.publisher.Mono;
 public class Storage {
 
     public final R2dbcEntityTemplate template;
-    private final JsonUtil jsonUtil;
 
     @Autowired
-    public Storage(R2dbcEntityTemplate template, JsonUtil jsonUtil) {
+    public Storage(R2dbcEntityTemplate template) {
         this.template = template;
-        this.jsonUtil = jsonUtil;
     }
 
     @Transactional
@@ -36,7 +34,7 @@ public class Storage {
                 .flatMap(c -> this.template.update(nextState));
     }
 
-    public Flux<EventLog> getEvents(int batchSize) {
+    private Flux<EventLog> getEvents(int batchSize) {
         var sql =
                 """
             SELECT event_log.*
