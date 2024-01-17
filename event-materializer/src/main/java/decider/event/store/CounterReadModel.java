@@ -3,17 +3,14 @@ package decider.event.store;
 import java.util.UUID;
 import org.springframework.data.annotation.Id;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
-public class CounterReadModel implements ReadModel<CounterReadModel.CounterState, CounterReadModel.CounterEvent> {
+public class CounterReadModel {
 
     public CounterState apply(CounterState currentState, CounterEvent event) {
         return event.apply(currentState);
     }
 
     public CounterState initialState() {
-        return new CounterState(null, 0, null);
+        return new CounterState(UUID.randomUUID(), 0);
     }
 
     // events

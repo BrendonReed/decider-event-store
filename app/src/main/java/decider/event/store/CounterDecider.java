@@ -18,7 +18,7 @@ public class CounterDecider
 
     @Override
     public CounterState initialState() {
-        return new CounterState(null, 0);
+        return new CounterState(UUID.randomUUID(), 0);
     }
 
     public boolean isTerminal(CounterState state) {
@@ -61,7 +61,7 @@ public class CounterDecider
 
         @Override
         public CounterState apply(CounterState currentState) {
-            return new CounterState(streamId, currentState.totalCount() + amount());
+            return new CounterState(currentState.id(), currentState.totalCount() + amount());
         }
     }
 
@@ -69,7 +69,7 @@ public class CounterDecider
 
         @Override
         public CounterState apply(CounterState currentState) {
-            return new CounterState(streamId, currentState.totalCount() - amount());
+            return new CounterState(currentState.id(), currentState.totalCount() - amount());
         }
     }
 

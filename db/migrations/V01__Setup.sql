@@ -27,6 +27,7 @@ create table processed_command (
   disposition text
   , transaction_time timestamp default now()
   , CHECK (disposition != 'force failure')
+  --, CHECK (command_id < 5)
 );
 
 create table counter_checkpoint (
@@ -39,6 +40,9 @@ create table counter_state (
   id uuid,
   total_count bigint
 );
+
+insert into counter_state  
+values ('4498a039-ce94-49b2-aff9-3ca12a8623d5', 0);
 
 create function send_event_notification() returns trigger as 
 $$

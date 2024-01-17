@@ -3,7 +3,6 @@ package decider.event.store;
 import static org.springframework.data.relational.core.query.Criteria.*;
 import static org.springframework.data.relational.core.query.Query.*;
 
-import decider.event.store.CounterReadModel.CounterState;
 import decider.event.store.DbRecordTypes.CounterCheckpoint;
 import decider.event.store.DbRecordTypes.EventLog;
 import io.r2dbc.postgresql.api.Notification;
@@ -28,18 +27,11 @@ public class Storage {
         this.template = template;
     }
 
-    public Mono<CounterState> getState() {
-        return this.template.select(CounterState.class).first();
-    }
-
     @Transactional
     public <S> Mono<S> saveStateAndCheckpoint(Long checkpoint, S nextState) {
         return this.template
                 .update(new CounterCheckpoint(1L, checkpoint))
-                .flatMap(c -> 
-                    this.template.update(nextState)
-                    .onErrorResume(error -> template.insert(nextState))
-                );
+                .flatMap(c -> this.template.update(nextState));
     }
 
     private Flux<EventLog> getEvents(int batchSize) {
@@ -48,7 +40,6 @@ public class Storage {
             SELECT event_log.*
             FROM event_log
             WHERE event_log.id > (SELECT event_log_id FROM counter_checkpoint LIMIT 1)
-            order by event_log.id
             limit :batchSize
             """;
         return template.getDatabaseClient()
@@ -60,17 +51,7 @@ public class Storage {
                 })
                 .all();
     }
-    public Flux<EventLog> getInfiniteStreamOfUnprocessedEvents2() {
 
-        var batchSize = 100;
-        return getEvents(batchSize)
-                .doOnError(error -> {
-                    // Log details when an error occurs
-                    log.error("Error occurred: {}", error.getMessage());
-                }).repeat().distinct()
-        // .retryWhen(Retry.backoff(3, Duration.ofMillis(1000)))
-        ;
-    }
     public Flux<EventLog> getInifiteStreamOfUnprocessedEvents(Flux<Notification> sub) {
 
         var batchSize = 100;

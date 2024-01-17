@@ -1,7 +1,6 @@
 package decider.event.store;
 
-public interface ReadModel<S, E> {
+public interface ReadModel<E, S> {
     // aka evolve
-    S apply(S currentState, E event);
-    S initialState();
+    public S apply(S currentState, E event);
 }

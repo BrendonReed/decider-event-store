@@ -7,8 +7,6 @@ import decider.event.store.config.PubSubConnection;
 
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -46,12 +44,19 @@ public class App implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // load initial state from view table
         // kick off main loop.
+        var stateId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
+        var startState = new CounterState(stateId, 0);
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
-        var rm = new CounterReadModel();
         var materializer =
-                new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, rm);
-        var initialState = storage.getState().switchIfEmpty(Mono.just(rm.initialState()));
-        var run = materializer.process(rm.initialState());
+                new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, startState);
+        var rm = new CounterReadModel();
+        // var run = pubSubConnection.registerListener("event_updated").flatMap(x -> {
+        //    String streamId = Utils.unsafeExtract(x.getParameter());
+        //    // get stored events, materialize a view and store it
+        //    return materializer.next(rm::apply);
+        // });
+        // run.blockLast(Duration.ofMinutes(4000));
+        var run = materializer.next(rm::apply);
         run.blockLast();
     }
 }
