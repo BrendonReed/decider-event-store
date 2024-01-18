@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.CounterReadModel.CounterEvent;
 import decider.event.store.CounterReadModel.CounterState;
 import decider.event.store.config.PubSubConnection;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -45,8 +44,7 @@ public class App implements CommandLineRunner {
         // kick off main loop.
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
         var rm = new CounterReadModel();
-        var materializer =
-                new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, rm);
+        var materializer = new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, rm);
         // var run = pubSubConnection.registerListener("event_updated").flatMap(x -> {
         //    String streamId = Utils.unsafeExtract(x.getParameter());
         //    // get stored events, materialize a view and store it

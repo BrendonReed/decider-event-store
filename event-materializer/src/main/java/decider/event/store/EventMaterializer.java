@@ -12,13 +12,17 @@ public class EventMaterializer<S, E> {
     private ReadModel<S, E> readModel;
 
     public EventMaterializer(
-            Storage storage, PubSubConnection pubSubConnection, SerializationMapper<E> mapper, ReadModel<S, E> readModel) {
+            Storage storage,
+            PubSubConnection pubSubConnection,
+            SerializationMapper<E> mapper,
+            ReadModel<S, E> readModel) {
         this.storage = storage;
         this.checkpoint = 0L;
         this.mapper = mapper;
         this.pubSubConnection = pubSubConnection;
         this.readModel = readModel;
     }
+
     public Long checkpoint;
     public S state;
 
