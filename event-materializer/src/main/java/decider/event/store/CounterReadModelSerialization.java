@@ -26,7 +26,6 @@ public class CounterReadModelSerialization implements SerializationMapper<Counte
     }
 
     public CounterEvent toEvent(EventLog dto) {
-        log.info("deserializing {}", dto);
         try {
             switch (dto.eventType()) {
                 case "decider.event.store.CounterDecider$Incremented": {

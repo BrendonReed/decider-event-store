@@ -3,7 +3,7 @@ package decider.event.store;
 import java.util.UUID;
 import org.springframework.data.annotation.Id;
 
-public class CounterReadModel {
+public class CounterReadModel implements ReadModel<CounterReadModel.CounterState, CounterReadModel.CounterEvent> {
 
     public CounterState apply(CounterState currentState, CounterEvent event) {
         return event.apply(currentState);

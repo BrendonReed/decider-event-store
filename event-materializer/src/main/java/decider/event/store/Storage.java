@@ -40,6 +40,7 @@ public class Storage {
             SELECT event_log.*
             FROM event_log
             WHERE event_log.id > (SELECT event_log_id FROM counter_checkpoint LIMIT 1)
+            order by event_log.id
             limit :batchSize
             """;
         return template.getDatabaseClient()
@@ -52,7 +53,7 @@ public class Storage {
                 .all();
     }
 
-    public Flux<EventLog> getInifiteStreamOfUnprocessedEvents(Flux<Notification> sub) {
+    public Flux<EventLog> getInfiniteStreamOfUnprocessedEvents(Flux<Notification> sub) {
 
         var batchSize = 100;
         var pollingInterval = Duration.ofSeconds(2);
