@@ -10,7 +10,7 @@ public class CounterReadModel implements ReadModel<CounterReadModel.CounterState
     }
 
     public CounterState initialState() {
-        return new CounterState(UUID.randomUUID(), 0);
+        return new CounterState(null, 0);
     }
 
     // events
@@ -26,7 +26,7 @@ public class CounterReadModel implements ReadModel<CounterReadModel.CounterState
 
         @Override
         public CounterState apply(CounterState currentState) {
-            return new CounterState(currentState.id(), currentState.totalCount() + amount());
+            return new CounterState(this.streamId(), currentState.totalCount() + amount());
         }
     }
 
@@ -34,7 +34,7 @@ public class CounterReadModel implements ReadModel<CounterReadModel.CounterState
 
         @Override
         public CounterState apply(CounterState currentState) {
-            return new CounterState(currentState.id(), currentState.totalCount() - amount());
+            return new CounterState(this.streamId(), currentState.totalCount() - amount());
         }
     }
 

@@ -5,7 +5,6 @@ import decider.event.store.CounterReadModel.CounterEvent;
 import decider.event.store.CounterReadModel.CounterState;
 import decider.event.store.config.PubSubConnection;
 
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -44,8 +43,6 @@ public class App implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // load initial state from view table
         // kick off main loop.
-        var stateId = UUID.fromString("4498a039-ce94-49b2-aff9-3ca12a8623d5");
-        var startState = new CounterState(stateId, 0);
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
         var rm = new CounterReadModel();
         var materializer =
@@ -56,7 +53,7 @@ public class App implements CommandLineRunner {
         //    return materializer.next(rm::apply);
         // });
         // run.blockLast(Duration.ofMinutes(4000));
-        var run = materializer.process(startState);
+        var run = materializer.process(rm.initialState());
         run.blockLast();
     }
 }

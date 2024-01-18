@@ -31,7 +31,10 @@ public class Storage {
     public <S> Mono<S> saveStateAndCheckpoint(Long checkpoint, S nextState) {
         return this.template
                 .update(new CounterCheckpoint(1L, checkpoint))
-                .flatMap(c -> this.template.update(nextState));
+                .flatMap(c -> 
+                    this.template.update(nextState)
+                    .onErrorResume(error -> template.insert(nextState))
+                );
     }
 
     private Flux<EventLog> getEvents(int batchSize) {
