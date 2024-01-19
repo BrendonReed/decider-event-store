@@ -29,6 +29,8 @@ public class Storage {
 
     @Transactional
     public <S> Mono<S> saveStateAndCheckpoint(Long checkpoint, S nextState) {
+        // TODO: this needs to be idempotent for it to work
+        // TODO: maybe embed the checkpoint or make it generic. Hardcoding it here isn't ideal
         return this.template
                 .update(new CounterCheckpoint(1L, checkpoint))
                 .flatMap(c -> this.template.update(nextState).onErrorResume(error -> template.insert(nextState)));
@@ -57,17 +59,19 @@ public class Storage {
 
         var batchSize = 100;
         var pollingInterval = Duration.ofSeconds(2);
-        var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
+        // var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
+        var triggers = Flux.interval(pollingInterval);
         return getEvents(batchSize)
-                .concatWith(triggers.onBackpressureDrop(data -> {
-                            log.debug("dropping");
-                        })
-                        .concatMap(t -> getEvents(batchSize)))
+                // .concatWith(triggers.onBackpressureDrop(data -> {
+                //             log.debug("dropping");
+                //         })
+                //         .concatMap(t -> getEvents(batchSize)))
                 .doOnError(error -> {
                     // Log details when an error occurs
                     log.error("Error occurred: {}", error.getMessage());
                 })
         // .retryWhen(Retry.backoff(3, Duration.ofMillis(1000)))
+            .repeatWhen(repeatSignal -> repeatSignal.delayElements(Duration.ofSeconds(1)))
         ;
     }
 

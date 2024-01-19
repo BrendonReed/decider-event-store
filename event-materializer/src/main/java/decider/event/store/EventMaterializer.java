@@ -24,7 +24,6 @@ public class EventMaterializer<S, E> {
     }
 
     public Long checkpoint;
-    public S state;
 
     // in a loop -
     // find next event - checkpoint.event_id + 1
@@ -45,10 +44,9 @@ public class EventMaterializer<S, E> {
         var save = Flux.zip(dbEvents, newStates).concatMap(tuple -> {
             var nextState = tuple.getT2();
             var eventDto = tuple.getT1();
-            this.state = nextState;
             checkpoint = eventDto.id();
-            log.debug("saving: {}", state);
-            return storage.saveStateAndCheckpoint(checkpoint, state);
+            log.debug("saving: {}", nextState);
+            return storage.saveStateAndCheckpoint(checkpoint, nextState);
         });
         return save;
     }
