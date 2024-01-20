@@ -10,7 +10,6 @@ public class EventMaterializer<S, E> {
     private SerializationMapper<E> mapper;
     private PubSubConnection pubSubConnection;
     private ReadModel<S, E> readModel;
-    private SequentialUniqueIdTransform sequenceObserver;
 
     public EventMaterializer(
             Storage storage,
@@ -18,14 +17,10 @@ public class EventMaterializer<S, E> {
             SerializationMapper<E> mapper,
             ReadModel<S, E> readModel) {
         this.storage = storage;
-        this.checkpoint = 0L;
         this.mapper = mapper;
         this.pubSubConnection = pubSubConnection;
         this.readModel = readModel;
-        this.sequenceObserver = new SequentialUniqueIdTransform(0L);
     }
-
-    public Long checkpoint;
 
     // in a loop -
     // find next event - checkpoint.event_id + 1
@@ -34,7 +29,6 @@ public class EventMaterializer<S, E> {
     // update checkpoints
 
     public Flux<S> process(S startState) {
-        log.debug("materializing from: {}", checkpoint);
         // TODO: join event query to processed command log to provide consistency
         // If a command emits multiple events, processes those events transactionally
         // to avoid an inconsistent view where not all events for a command are processed
@@ -45,10 +39,10 @@ public class EventMaterializer<S, E> {
         var newStates = mapped.scan(startState, readModel::apply)
                         .skip(1) // skip because scan emits for the inital state, which we don't want to process
                 ;
-        var save = dbEvents.zipWith(newStates, (eventDto, nextState) -> {
+        var save2 = dbEvents.zipWith(newStates, (eventDto, nextState) -> {
                     return storage.saveStateAndCheckpoint(eventDto.id(), nextState);
                 })
                 .concatMap(e -> e);
-        return save;
+        return save2;
     }
 }

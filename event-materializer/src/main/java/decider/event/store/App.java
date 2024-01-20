@@ -45,12 +45,6 @@ public class App implements CommandLineRunner {
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
         var rm = new CounterReadModel();
         var materializer = new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, rm);
-        // var run = pubSubConnection.registerListener("event_updated").flatMap(x -> {
-        //    String streamId = Utils.unsafeExtract(x.getParameter());
-        //    // get stored events, materialize a view and store it
-        //    return materializer.next(rm::apply);
-        // });
-        // run.blockLast(Duration.ofMinutes(4000));
         var run = materializer.process(rm.initialState());
         run.blockLast();
     }
