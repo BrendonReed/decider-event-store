@@ -43,9 +43,10 @@ public class App implements CommandLineRunner {
         // load initial state from view table
         // kick off main loop.
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
-        var rm = new CounterReadModel();
-        var materializer = new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, rm);
-        var run = materializer.process(rm.initialState());
+        var readModel = new CounterReadModel();
+        var materializer =
+                new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, readModel);
+        var run = materializer.process();
         run.blockLast();
     }
 }

@@ -3,6 +3,7 @@ package decider.event.store;
 import static org.springframework.data.relational.core.query.Criteria.*;
 import static org.springframework.data.relational.core.query.Query.*;
 
+import decider.event.store.CounterReadModel.CounterState;
 import decider.event.store.DbRecordTypes.CounterCheckpoint;
 import decider.event.store.DbRecordTypes.EventLog;
 import io.r2dbc.postgresql.api.Notification;
@@ -25,6 +26,10 @@ public class Storage {
     @Autowired
     public Storage(R2dbcEntityTemplate template) {
         this.template = template;
+    }
+
+    public Mono<CounterState> getState() {
+        return this.template.select(CounterState.class).first();
     }
 
     @Transactional
