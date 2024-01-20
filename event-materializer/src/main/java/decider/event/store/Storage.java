@@ -32,6 +32,10 @@ public class Storage {
         return this.template.select(CounterState.class).first();
     }
 
+    public Mono<CounterCheckpoint> getCheckpoint() {
+        return this.template.select(CounterCheckpoint.class).first();
+    }
+
     @Transactional
     public <S> Mono<S> saveStateAndCheckpoint(Long checkpoint, S nextState) {
         // TODO: this needs to be idempotent for it to work
@@ -62,11 +66,11 @@ public class Storage {
                 .all();
     }
 
-    public Flux<EventLog> getInfiniteStreamOfUnprocessedEvents(Flux<Notification> sub) {
+    public Flux<EventLog> getInfiniteStreamOfUnprocessedEvents(Flux<Notification> sub, Long seedCheckpoint) {
 
         var batchSize = 100;
         var pollingInterval = Duration.ofMillis(1000);
-        var uniqueFilter = new SequentialUniqueIdTransform(0L);
+        var uniqueFilter = new SequentialUniqueIdTransform(seedCheckpoint);
         var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
         // var triggers = Flux.interval(Duration.ofSeconds(10), pollingInterval);
         var events = getEvents(batchSize, uniqueFilter.max.get())

@@ -11,6 +11,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import reactor.core.publisher.Mono;
 
 @SpringBootApplication
 @EnableTransactionManagement
@@ -38,6 +39,14 @@ public class App implements CommandLineRunner {
         SpringApplication.run(App.class, args);
     }
 
+    public Mono<CounterState> loadInitialState() {
+        log.info("Loading initial state");
+        return storage.getState();
+    }
+    public Mono<Long> loadCheckpoint() {
+        return storage.getCheckpoint().map(c -> c.eventLogId());
+    }
+
     @Override
     public void run(String... args) throws Exception {
         // load initial state from view table
@@ -46,7 +55,7 @@ public class App implements CommandLineRunner {
         var readModel = new CounterReadModel();
         var materializer =
                 new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, readModel);
-        var run = materializer.process();
+        var run = materializer.process(loadInitialState(), loadCheckpoint());
         run.blockLast();
     }
 }

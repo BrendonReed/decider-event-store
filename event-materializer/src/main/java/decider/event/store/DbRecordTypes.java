@@ -9,5 +9,4 @@ public class DbRecordTypes {
     public record EventLog(@Id Long id, Long tenantId, UUID streamId, String eventType, Json payload) {}
 
     public record CounterCheckpoint(@Id Long id, Long eventLogId) {}
-    ;
 }
