@@ -40,11 +40,12 @@ create table counter_state (
   id uuid,
   total_count bigint
 );
+insert into counter_state (id, total_count) values ('3BE87B37-B538-40BC-A53C-24A630BFFA2A', 0);
 
 create function send_event_notification() returns trigger as 
 $$
 begin
-  perform pg_notify('event_updated', row_to_json(new)::TEXT);
+  perform pg_notify('event_logged', row_to_json(new)::TEXT);
   return null;
 end;
 $$ lANGUAGE plpgsql;

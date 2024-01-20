@@ -1,8 +1,10 @@
 package decider.event.store;
 
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;
 
+@Slf4j
 public class CounterReadModel implements ReadModel<CounterReadModel.CounterState, CounterReadModel.CounterEvent> {
 
     public CounterState apply(CounterState currentState, CounterEvent event) {
@@ -26,7 +28,8 @@ public class CounterReadModel implements ReadModel<CounterReadModel.CounterState
 
         @Override
         public CounterState apply(CounterState currentState) {
-            return new CounterState(this.streamId(), currentState.totalCount() + amount());
+            var newState = new CounterState(this.streamId(), currentState.totalCount() + amount());
+            return newState;
         }
     }
 

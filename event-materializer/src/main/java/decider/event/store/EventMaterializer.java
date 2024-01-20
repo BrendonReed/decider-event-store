@@ -10,6 +10,7 @@ public class EventMaterializer<S, E> {
     private SerializationMapper<E> mapper;
     private PubSubConnection pubSubConnection;
     private ReadModel<S, E> readModel;
+    private SequentialUniqueIdTransform sequenceObserver;
 
     public EventMaterializer(
             Storage storage,
@@ -21,6 +22,7 @@ public class EventMaterializer<S, E> {
         this.mapper = mapper;
         this.pubSubConnection = pubSubConnection;
         this.readModel = readModel;
+        this.sequenceObserver = new SequentialUniqueIdTransform(0L);
     }
 
     public Long checkpoint;
@@ -37,17 +39,16 @@ public class EventMaterializer<S, E> {
         // If a command emits multiple events, processes those events transactionally
         // to avoid an inconsistent view where not all events for a command are processed
         var listener = pubSubConnection.registerListener("event_logged");
-        var dbEvents = storage.getInfiniteStreamOfUnprocessedEvents(listener);
+        // var dbEvents = storage.getEvents(100);
+        var dbEvents = storage.getInfiniteStreamOfUnprocessedEvents(listener).share();
         var mapped = dbEvents.map(mapper::toEvent);
         var newStates = mapped.scan(startState, readModel::apply)
-                .skip(1); // skip because scan emits for the inital state, which we don't want to process
-        var save = Flux.zip(dbEvents, newStates).concatMap(tuple -> {
-            var nextState = tuple.getT2();
-            var eventDto = tuple.getT1();
-            checkpoint = eventDto.id();
-            log.debug("saving: {}", nextState);
-            return storage.saveStateAndCheckpoint(checkpoint, nextState);
-        });
+                        .skip(1) // skip because scan emits for the inital state, which we don't want to process
+                ;
+        var save = dbEvents.zipWith(newStates, (eventDto, nextState) -> {
+                    return storage.saveStateAndCheckpoint(eventDto.id(), nextState);
+                })
+                .concatMap(e -> e);
         return save;
     }
 }

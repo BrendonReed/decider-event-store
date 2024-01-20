@@ -95,7 +95,7 @@ SELECT
     uuid_generate_v4(),
     'decider.event.store.CounterDecider$Increment',
     ('{"amount": ' || generate_series || ', "streamId": "3BE87B37-B538-40BC-A53C-24A630BFFA2A", "tenantId": 1 }')::jsonb
-FROM generate_series(11, 20);
+FROM generate_series(1, 10);
 
 select uuid_generate_v4() command_id, generate_series id
 FROM generate_series(11, 20);
@@ -108,4 +108,4 @@ SELECT
 SELECT event_log.*
 FROM event_log
 WHERE event_log.id > (SELECT event_log_id FROM counter_checkpoint LIMIT 1)
-limit 100
+order by event_log.id

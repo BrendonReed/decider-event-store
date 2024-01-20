@@ -36,18 +36,20 @@ public class Storage {
                 .flatMap(c -> this.template.update(nextState).onErrorResume(error -> template.insert(nextState)));
     }
 
-    private Flux<EventLog> getEvents(int batchSize) {
+    public Flux<EventLog> getEvents(int batchSize, long checkpoint) {
+        log.debug("querying from checkpoint: {}", checkpoint);
         var sql =
                 """
             SELECT event_log.*
             FROM event_log
-            WHERE event_log.id > (SELECT event_log_id FROM counter_checkpoint LIMIT 1)
+            WHERE event_log.id > :checkpoint
             order by event_log.id
             limit :batchSize
             """;
         return template.getDatabaseClient()
                 .sql(sql)
                 .bind("batchSize", batchSize)
+                .bind("checkpoint", checkpoint)
                 .map((row, metadata) -> {
                     EventLog command = template.getConverter().read(EventLog.class, row, metadata);
                     return command;
@@ -58,21 +60,23 @@ public class Storage {
     public Flux<EventLog> getInfiniteStreamOfUnprocessedEvents(Flux<Notification> sub) {
 
         var batchSize = 100;
-        var pollingInterval = Duration.ofSeconds(2);
-        // var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
-        var triggers = Flux.interval(pollingInterval);
-        return getEvents(batchSize)
-                // .concatWith(triggers.onBackpressureDrop(data -> {
-                //             log.debug("dropping");
-                //         })
-                //         .concatMap(t -> getEvents(batchSize)))
-                .doOnError(error -> {
-                    // Log details when an error occurs
-                    log.error("Error occurred: {}", error.getMessage());
-                })
-        // .retryWhen(Retry.backoff(3, Duration.ofMillis(1000)))
-            .repeatWhen(repeatSignal -> repeatSignal.delayElements(Duration.ofSeconds(1)))
-        ;
+        var pollingInterval = Duration.ofMillis(1000);
+        var uniqueFilter = new SequentialUniqueIdTransform(0L);
+        var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
+        // var triggers = Flux.interval(Duration.ofSeconds(10), pollingInterval);
+        var events = getEvents(batchSize, uniqueFilter.max.get())
+                        .concatWith(triggers.onBackpressureDrop(data -> {
+                                    log.debug("dropping");
+                                })
+                                .concatMap(t -> getEvents(batchSize, uniqueFilter.max.get())))
+                        .doOnError(error -> {
+                            // Log details when an error occurs
+                            log.error("Error occurred: {}", error.getMessage());
+                        })
+                // .retryWhen(Retry.backoff(3, Duration.ofMillis(1000)))
+                // .repeatWhen(repeatSignal -> repeatSignal.delayElements(Duration.ofSeconds(1)))
+                ;
+        return events.filter(e -> uniqueFilter.isFirstInstance(e.id()));
     }
 
     public Flux<LocalDateTime> queryCurrentTime() {
