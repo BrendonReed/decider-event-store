@@ -43,6 +43,7 @@ public class App implements CommandLineRunner {
         log.info("Loading initial state");
         return storage.getState();
     }
+
     public Mono<Long> loadCheckpoint() {
         return storage.getCheckpoint().map(c -> c.eventLogId());
     }
