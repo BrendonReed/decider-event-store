@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import shared.SequentialUniqueIdObserver;
 
 @Component
 @Slf4j
@@ -61,10 +62,10 @@ public class Storage {
                 .all();
     }
 
-    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands(Flux<Notification> sub) {
+    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands(Flux<Notification> sub, int batchSize, int pollIntervalMilliseconds) {
 
-        var batchSize = 100;
-        var pollingInterval = Duration.ofSeconds(2);
+        var pollingInterval = Duration.ofMillis(pollIntervalMilliseconds);
+        var uniqueFilter = new SequentialUniqueIdObserver(0L);
         var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
         return getCommands(batchSize)
                 .concatWith(triggers.onBackpressureDrop(data -> {
@@ -75,6 +76,7 @@ public class Storage {
                     // Log details when an error occurs
                     log.error("Error occurred: {}", error.getMessage());
                 })
+                // .filter(c -> uniqueFilter.isFirstInstance(c.id()))
         // .retryWhen(Retry.backoff(3, Duration.ofMillis(1000)))
         ;
     }
@@ -89,6 +91,7 @@ public class Storage {
                 .from("processed_command")
                 .matching(query(where("command_id").is(commandLogId)))
                 .one();
+        // Mono<ProcessedCommand> existing = Mono.empty();
 
         var saveEvents = Flux.fromIterable(events)
                 .flatMapSequential(event -> {

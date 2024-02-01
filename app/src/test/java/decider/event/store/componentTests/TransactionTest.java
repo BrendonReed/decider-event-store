@@ -98,10 +98,15 @@ public class TransactionTest {
 
     @Test
     void ArithmeticSequence() throws JsonProcessingException {
-        // var expected = 500501L; // for sum of 1 to 1000
+        // this verifies general operation
+        // but also verifies correct behavior when we get duplicates in the stream
+        // which can't be prevented. It does that by configuring the batch size
+        // and polling interval the downstream processing can't keep up. 
         var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A");
         var elementCount = 200;
         var expected = 20100L; // for sum of 1 to 200
+        // var elementCount = 1000;
+        // var expected = 500500L; // for sum of 1 to 1000
         var commands = Flux.range(1, elementCount).flatMapSequential(i -> {
             var command = new Increment(i, 1L, streamId);
             return storage.insertCommand(UUID.randomUUID(), command);
@@ -114,7 +119,7 @@ public class TransactionTest {
         var dtoMapper = new CounterSerialization(this.jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
-                .process()
+                .process(100, 2000)
                 .take(elementCount)
                 .as(StepVerifier::create)
                 .expectNextCount(199)
@@ -153,7 +158,7 @@ public class TransactionTest {
         var dtoMapper = new AddingSerialization(jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
-                .process()
+                .process(100, 2000)
                 .take(1)
                 .as(StepVerifier::create)
                 .assertNext(nextState -> assertThat(nextState).isEqualTo(1))

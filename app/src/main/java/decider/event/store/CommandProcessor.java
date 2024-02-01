@@ -8,6 +8,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import shared.Utils2;
 
 record DecisionResult<S, E>(S state, List<? extends E> newEvents, String commandDisposition) {}
 
@@ -37,13 +38,13 @@ public class CommandProcessor<C, E, S> {
         });
     }
 
-    public Flux<S> process() {
+    public Flux<S> process(int batchSize, int pollIntervalMilliseconds) {
         Instant start = Instant.now();
 
         var initialState = loadInitialState();
 
         var listener = pubSubConnection.registerListener("command_logged");
-        var allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener);
+        var allCommands = storage.getInifiteStreamOfUnprocessedCommands(listener, batchSize, pollIntervalMilliseconds);
         var run = initialState
                 .doOnTerminate(() -> {
                     Instant end = Instant.now();
@@ -73,7 +74,7 @@ public class CommandProcessor<C, E, S> {
         try {
             var domainCommand = dtoMapper.toCommand(command);
             var newEvents = decider.mutate(acc.state(), domainCommand);
-            var newState = Utils.fold(acc.state(), newEvents, decider::apply);
+            var newState = Utils2.fold(acc.state(), newEvents, decider::apply);
             log.debug("current state: {}", newState);
             return new DecisionResult<S, E>(newState, newEvents, "Success");
         } catch (RuntimeException e) {

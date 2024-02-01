@@ -43,6 +43,9 @@ took ~34 minutes to do 100,000 commands.
 
 With dummy data for startup, too 30 seconds to startup with 1 million events.
 
+~30 seconds to process 10k commands with observer instead of checking for existing
+~75 seconds to process 10k commands with existence check
+
 == Tests that need written
 
 . [ ] retrying when database connection drops (network blip)
@@ -60,7 +63,7 @@ In a similar vein, the opinionated choice to include a tenantId an a streamId as
 == Next
 
 . [x] Persist commands with envelope for storing success/failure.
-. Event materializer in another process
+. [x] Event materializer in another process
 . GraphQL based interface instead of CLI
 . Show concurrency scenario - course subscription + course capacity change
 . Show read after write consistency
