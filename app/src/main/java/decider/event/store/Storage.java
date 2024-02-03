@@ -76,7 +76,7 @@ public class Storage {
                     // Log details when an error occurs
                     log.error("Error occurred: {}", error.getMessage());
                 })
-                // .filter(c -> uniqueFilter.isFirstInstance(c.id()))
+                .filter(c -> uniqueFilter.isFirstInstance(c.id()))
         // .retryWhen(Retry.backoff(3, Duration.ofMillis(1000)))
         ;
     }
@@ -87,11 +87,11 @@ public class Storage {
         // because of the way stream is processed, it's possible to have duplicates
         // so it's important that this process is idempotent, so if the command
         // has already been processed, then just skip it.
-        var existing = template.select(ProcessedCommand.class)
-                .from("processed_command")
-                .matching(query(where("command_id").is(commandLogId)))
-                .one();
-        // Mono<ProcessedCommand> existing = Mono.empty();
+        // var existing = template.select(ProcessedCommand.class)
+        //         .from("processed_command")
+        //         .matching(query(where("command_id").is(commandLogId)))
+        //         .one();
+        Mono<ProcessedCommand> existing = Mono.empty();
 
         var saveEvents = Flux.fromIterable(events)
                 .flatMapSequential(event -> {
