@@ -58,7 +58,7 @@ public class DbSandbox {
 
         return Flux.range(1, rowsToInsert).flatMapSequential(i -> {
             return connection
-                    .createStatement(String.format(sql, UUID.randomUUID(), "{\"amount\": " + seq.get() + "}"))
+                    .createStatement(String.format(sql, UUID.randomUUID(), "{\"amount\": " + seq.get() + ", \"streamId\": \"3BE87B37-B538-40BC-A53C-24A630BFFA2A\", \"tenantId\": 1 }"))
                     .execute();
         });
     }
@@ -73,7 +73,7 @@ public class DbSandbox {
         // random to be more like real life and to have a wider range of burst
         // int rowsToInsert = random.nextInt(91) + 10; // Generate random rows between 10 and 80
         // or constant for less variability
-        var rowsToInsert = 20;
+        var rowsToInsert = 100;
         for (int i = 1; i < 30; i++) { // Change the iteration limit as needed
             try {
                 Thread.sleep(1000);
