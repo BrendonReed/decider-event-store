@@ -58,7 +58,11 @@ public class DbSandbox {
 
         return Flux.range(1, rowsToInsert).flatMapSequential(i -> {
             return connection
-                    .createStatement(String.format(sql, UUID.randomUUID(), "{\"amount\": " + seq.get() + ", \"streamId\": \"3BE87B37-B538-40BC-A53C-24A630BFFA2A\", \"tenantId\": 1 }"))
+                    .createStatement(String.format(
+                            sql,
+                            UUID.randomUUID(),
+                            "{\"amount\": " + seq.get()
+                                    + ", \"streamId\": \"3BE87B37-B538-40BC-A53C-24A630BFFA2A\", \"tenantId\": 1 }"))
                     .execute();
         });
     }

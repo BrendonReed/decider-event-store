@@ -40,6 +40,26 @@ public class Storage {
                 .all();
     }
 
+    public Flux<CommandLog> getCommands(int batchSize, long lastCommand) {
+        var sql =
+                """
+            select command_log.*
+            from command_log
+            where command_log.id > :lastCommand
+            order by command_log.id
+            limit :batchSize
+            """;
+        return template.getDatabaseClient()
+                .sql(sql)
+                .bind("batchSize", batchSize)
+                .bind("lastCommand", lastCommand)
+                .map((row, metadata) -> {
+                    CommandLog command = template.getConverter().read(CommandLog.class, row, metadata);
+                    return command;
+                })
+                .all();
+    }
+
     public Flux<CommandLog> getCommands(int batchSize) {
         var sql =
                 """
@@ -62,16 +82,17 @@ public class Storage {
                 .all();
     }
 
-    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands(Flux<Notification> sub, int batchSize, int pollIntervalMilliseconds) {
+    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands(
+            Flux<Notification> sub, int batchSize, int pollIntervalMilliseconds) {
 
         var pollingInterval = Duration.ofMillis(pollIntervalMilliseconds);
         var uniqueFilter = new SequentialUniqueIdObserver(0L);
         var triggers = Flux.merge(Flux.interval(pollingInterval), sub);
-        return getCommands(batchSize)
+        return getCommands(batchSize, uniqueFilter.max.get())
                 .concatWith(triggers.onBackpressureDrop(data -> {
                             log.debug("dropping");
                         })
-                        .concatMap(t -> getCommands(batchSize)))
+                        .concatMap(t -> getCommands(batchSize, uniqueFilter.max.get())))
                 .doOnError(error -> {
                     // Log details when an error occurs
                     log.error("Error occurred: {}", error.getMessage());

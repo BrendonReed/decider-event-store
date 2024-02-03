@@ -101,7 +101,7 @@ public class TransactionTest {
         // this verifies general operation
         // but also verifies correct behavior when we get duplicates in the stream
         // which can't be prevented. It does that by configuring the batch size
-        // and polling interval the downstream processing can't keep up. 
+        // and polling interval the downstream processing can't keep up.
         var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A");
         // var elementCount = 200;
         // var expected = 20100L; // for sum of 1 to 200
