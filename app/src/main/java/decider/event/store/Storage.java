@@ -82,7 +82,7 @@ public class Storage {
                 .all();
     }
 
-    public Flux<CommandLog> getInifiteStreamOfUnprocessedCommands(
+    public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommands(
             Flux<Notification> sub, int batchSize, int pollIntervalMilliseconds) {
 
         var pollingInterval = Duration.ofMillis(pollIntervalMilliseconds);
