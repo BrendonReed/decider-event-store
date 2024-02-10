@@ -86,9 +86,11 @@ public class CommandProcessor<C, E, S> {
 
     private Mono<S> saveNext(CommandLog commandDto, String disposition, List<? extends E> newEvents, S nextState) {
         var x = newEvents.stream();
+        var streamId = commandDto.streamId();
+        var asOf = commandDto.asOfRevisionId();
         var eventDtos = x.map(e -> dtoMapper.serialize(e)).toList();
         return disposition == "Success"
-                ? storage.saveDto(commandDto.id(), eventDtos).map(pc -> nextState)
+                ? storage.saveDtoRejectConflict(commandDto.id(), eventDtos, streamId, asOf).map(pc -> nextState)
                 : storage.saveFailedCommand(commandDto.id()).map(pc -> nextState);
     }
 }

@@ -102,6 +102,53 @@ public class Storage {
         ;
     }
 
+    public Mono<EventLog> getConflictingEvents(UUID streamId, Long expectedEventId) {
+        return template.select(EventLog.class)
+                .from("event_log")
+                .matching(query(where("stream_id").is(streamId).and("id").greaterThan(expectedEventId)))
+                .one();
+    }
+    // TODO: add test to make sure the transaction works.
+    @Transactional
+    public <ED> Mono<ProcessedCommand> saveDtoRejectConflict(Long commandLogId, List<EventLog> events, UUID streamId, Long asOfRevisionId) {
+        // because of the way stream is processed, it's possible to have duplicates
+        // so it's important that this process is idempotent, so if the command
+        // has already been processed, then just skip it.
+        // var existing = template.select(ProcessedCommand.class)
+        //         .from("processed_command")
+        //         .matching(query(where("command_id").is(commandLogId)))
+        //         .one();
+        var conflicting = getConflictingEvents(streamId, asOfRevisionId);
+        var saveFailedOnConflict = conflicting.flatMap(e -> { 
+            log.info("found conflict");
+            return saveFailedCommand(commandLogId);
+        });
+
+        var saveEvents = Flux.fromIterable(events)
+                .flatMapSequential(event -> {
+                    return template.insert(event);
+                })
+                .reduce((maxObject, nextObject) -> {
+                    if (nextObject.id() > maxObject.id()) {
+                        return nextObject;
+                    } else {
+                        return maxObject;
+                    }
+                });
+        var saveEventsAndCommand = saveEvents.flatMap(maxEvent -> {
+            log.info("saving events from command: {} expecting: {}", commandLogId, asOfRevisionId);
+            var pc = new ProcessedCommand(commandLogId, maxEvent.id(), "success");
+            return template.insert(pc);
+        });
+        var x = conflicting.switchIfEmpty(saveEvents);
+        var z = saveFailedOnConflict.switchIfEmpty(saveEventsAndCommand);
+        // var y = x.flatMap(maxEvent -> {
+        //     log.info("saving events from command: {} expecting: {}", commandLogId, asOfRevisionId);
+        //     var pc = new ProcessedCommand(commandLogId, maxEvent.id(), "success");
+        //     return template.insert(pc);
+        // });
+        return z;
+    }
     // TODO: add test to make sure the transaction works.
     @Transactional
     public <ED> Mono<ProcessedCommand> saveDto(Long commandLogId, List<EventLog> events) {
@@ -171,9 +218,9 @@ public class Storage {
                 .all();
     }
 
-    public <T> Mono<CommandLog> insertCommand(UUID requestId, T payload) {
+    public <T> Mono<CommandLog> insertCommand(UUID requestId, T payload, Long tenantId, UUID streamId, Long asOfRevision) {
         var jsonMeta = jsonUtil.toJson(payload);
-        var cp = new CommandLog(null, requestId, jsonMeta.objectType(), jsonMeta.json());
+        var cp = new CommandLog(null, requestId, tenantId, streamId, asOfRevision, jsonMeta.objectType(), jsonMeta.json());
         return template.insert(cp);
     }
 }

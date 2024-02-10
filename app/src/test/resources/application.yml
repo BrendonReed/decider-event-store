@@ -1,3 +1,4 @@
 logging:
   level:
     decider.event.store: DEBUG
+    # io.r2dbc: DEBUG

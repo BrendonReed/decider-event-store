@@ -16,6 +16,7 @@ create table command_log (
   request_id uuid not null,
   tenant_id bigint,
   stream_id uuid, 
+  as_of_revision_id bigint,
   transaction_time timestamp default now(),
   command_type text,
   command jsonb not null
