@@ -1,9 +1,7 @@
 package decider.event.store;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import domain.CounterDecider;
-
 import java.time.Instant;
 import java.util.Scanner;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +51,7 @@ public class App implements CommandLineRunner {
         // in that world, Decider interface is part of command processor infra
         // b) have 1 infra process which references the domain. Even multiple "domains"
         // in that world Decider interface is part of the Domain since both have to refence it
-        // Infra references Domain = 
+        // Infra references Domain =
         var decider = new CounterDecider();
         var dtoMapper = new CounterSerialization(jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);

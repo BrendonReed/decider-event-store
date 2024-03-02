@@ -110,7 +110,8 @@ public class Storage {
     }
     // TODO: add test to make sure the transaction works.
     @Transactional
-    public <ED> Mono<ProcessedCommand> saveDtoRejectConflict(Long commandLogId, List<EventLog> events, UUID streamId, Long asOfRevisionId) {
+    public <ED> Mono<ProcessedCommand> saveDtoRejectConflict(
+            Long commandLogId, List<EventLog> events, UUID streamId, Long asOfRevisionId) {
         // because of the way stream is processed, it's possible to have duplicates
         // so it's important that this process is idempotent, so if the command
         // has already been processed, then just skip it.
@@ -119,7 +120,7 @@ public class Storage {
         //         .matching(query(where("command_id").is(commandLogId)))
         //         .one();
         var conflicting = getConflictingEvents(streamId, asOfRevisionId);
-        var saveFailedOnConflict = conflicting.flatMap(e -> { 
+        var saveFailedOnConflict = conflicting.flatMap(e -> {
             log.info("found conflict");
             return saveFailedCommand(commandLogId);
         });
@@ -218,9 +219,11 @@ public class Storage {
                 .all();
     }
 
-    public <T> Mono<CommandLog> insertCommand(UUID requestId, T payload, Long tenantId, UUID streamId, Long asOfRevision) {
+    public <T> Mono<CommandLog> insertCommand(
+            UUID requestId, T payload, Long tenantId, UUID streamId, Long asOfRevision) {
         var jsonMeta = jsonUtil.toJson(payload);
-        var cp = new CommandLog(null, requestId, tenantId, streamId, asOfRevision, jsonMeta.objectType(), jsonMeta.json());
+        var cp = new CommandLog(
+                null, requestId, tenantId, streamId, asOfRevision, jsonMeta.objectType(), jsonMeta.json());
         return template.insert(cp);
     }
 }

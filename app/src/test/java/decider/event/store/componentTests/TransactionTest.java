@@ -7,8 +7,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.AddingDecider;
 import decider.event.store.AddingDecider.GetDiff;
-import domain.CounterDecider;
-import domain.CounterDecider.Increment;
 import decider.event.store.AddingSerialization;
 import decider.event.store.CommandProcessor;
 import decider.event.store.CounterSerialization;
@@ -16,6 +14,8 @@ import decider.event.store.InfrastructureConfiguration;
 import decider.event.store.JsonUtil;
 import decider.event.store.PubSubConnection;
 import decider.event.store.Storage;
+import domain.CounterDecider;
+import domain.CounterDecider.Increment;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
@@ -176,10 +176,7 @@ public class TransactionTest {
     @Test
     void FailsIfConflict() throws JsonProcessingException {
         var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A");
-        var commands = Flux.just(
-                new Increment(1, 1L, streamId),
-                new Increment(1, 1L, streamId)
-                );
+        var commands = Flux.just(new Increment(1, 1L, streamId), new Increment(1, 1L, streamId));
         var runCommands = commands.flatMapSequential(command -> {
             return storage.insertCommand(UUID.randomUUID(), command, command.tenantId(), command.streamId(), 0L);
         });

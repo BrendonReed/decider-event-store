@@ -2,7 +2,6 @@ package decider.event.store;
 
 import decider.event.store.DbRecordTypes.CommandLog;
 import domain.Decider;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -92,7 +91,8 @@ public class CommandProcessor<C, E, S> {
         var asOf = commandDto.asOfRevisionId();
         var eventDtos = x.map(e -> dtoMapper.serialize(e)).toList();
         return disposition == "Success"
-                ? storage.saveDtoRejectConflict(commandDto.id(), eventDtos, streamId, asOf).map(pc -> nextState)
+                ? storage.saveDtoRejectConflict(commandDto.id(), eventDtos, streamId, asOf)
+                        .map(pc -> nextState)
                 : storage.saveFailedCommand(commandDto.id()).map(pc -> nextState);
     }
 }
