@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.annotation.Id;
 
+import domain.Decider;
+
 public class CounterDecider
         implements Decider<CounterDecider.CounterCommand, CounterDecider.CounterEvent, CounterDecider.CounterState> {
 

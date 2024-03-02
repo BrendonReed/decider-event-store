@@ -40,6 +40,17 @@ public class App implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        // so I have multiple domains - heartbeat and real domain.
+        // I could just include a heartbeat in the main domain
+        // or I could compose 2 deciders here...
+        // .. where should I put the decider interface?
+        // both the domain and the infra need to reference it
+        // could:
+        // a) create infra as library components and each domain references to have a process
+        // in that world, Decider interface is part of command processor infra
+        // b) have 1 infra process which references the domain. Even multiple "domains"
+        // in that world Decider interface is part of the Domain since both have to refence it
+        // Infra references Domain = 
         var decider = new CounterDecider();
         var dtoMapper = new CounterSerialization(jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);

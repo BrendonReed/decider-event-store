@@ -39,6 +39,7 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	implementation project(':shared')
+	implementation project(':domain')
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

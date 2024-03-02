@@ -1,6 +1,8 @@
 package decider.event.store;
 
 import decider.event.store.DbRecordTypes.CommandLog;
+import domain.Decider;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
