@@ -13,6 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CounterSerialization implements SerializationMapper<CounterCommand, CounterEvent> {
 
+    // should this live in the domain?
+    // it could live in the domain
+    // or it could live in the command processor.
+    // if it lived in the command processor, materializer would also need one
+    // if it lives in the domain, then it can be shared in command processor and 
+    // in order for it to be in the domain library though, the domain library would need 
+    // references to json and db libraries as well as the types we're serializing to/from - eventLog and commandLog
     private final JsonUtil jsonUtil;
 
     public CounterSerialization(JsonUtil jsonUtil) {

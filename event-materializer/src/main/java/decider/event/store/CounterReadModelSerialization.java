@@ -19,27 +19,12 @@ public class CounterReadModelSerialization implements SerializationMapper<Counte
         this.objectMapper = objectMapper;
     }
 
-    public EventLog serialize(CounterEvent entity) {
-        var eventType = entity.getClass().getName();
-        var asJson = jsonUtil.serialize(entity);
-        return new EventLog(null, entity.tenantId(), entity.streamId(), eventType, asJson);
-    }
-
     public CounterEvent toEvent(EventLog dto) {
-        try {
-            switch (dto.eventType()) {
-                case "domain.CounterDecider$Incremented": {
-                    var data = objectMapper.readValue(dto.payload().asString(), Incremented.class);
-                    return data;
-                }
-                case "domain.CounterDecider$Decremented": {
-                    var data = objectMapper.readValue(dto.payload().asString(), Decremented.class);
-                    return data;
-                }
-            }
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            throw new UnsupportedOperationException();
+        var x = jsonUtil.deSerialize(dto.payload().asString(), dto.eventType());
+        if (x instanceof Incremented e) {
+            return e;
+        } else if (x instanceof Decremented e) {
+            return e;
         }
         throw new UnsupportedOperationException("Error deserializing event");
     }
