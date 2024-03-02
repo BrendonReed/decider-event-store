@@ -1,6 +1,9 @@
 package decider.event.store;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import domain.CounterDecider;
+
 import java.time.Instant;
 import java.util.Scanner;
 import lombok.extern.slf4j.Slf4j;

@@ -1,13 +1,13 @@
 package decider.event.store;
 
-import decider.event.store.CounterDecider.CounterCommand;
-import decider.event.store.CounterDecider.CounterEvent;
-import decider.event.store.CounterDecider.Decrement;
-import decider.event.store.CounterDecider.Decremented;
-import decider.event.store.CounterDecider.Increment;
-import decider.event.store.CounterDecider.Incremented;
 import decider.event.store.DbRecordTypes.CommandLog;
 import decider.event.store.DbRecordTypes.EventLog;
+import domain.CounterDecider.CounterCommand;
+import domain.CounterDecider.CounterEvent;
+import domain.CounterDecider.Decrement;
+import domain.CounterDecider.Decremented;
+import domain.CounterDecider.Increment;
+import domain.CounterDecider.Incremented;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

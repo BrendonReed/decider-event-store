@@ -1,10 +1,7 @@
-package decider.event.store;
+package domain;
 
 import java.util.List;
 import java.util.UUID;
-import org.springframework.data.annotation.Id;
-
-import domain.Decider;
 
 public class CounterDecider
         implements Decider<CounterDecider.CounterCommand, CounterDecider.CounterEvent, CounterDecider.CounterState> {
@@ -76,5 +73,5 @@ public class CounterDecider
     }
 
     // state
-    public record CounterState(@Id UUID id, long totalCount) {}
+    public record CounterState(UUID id, long totalCount) {}
 }
