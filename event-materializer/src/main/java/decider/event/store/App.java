@@ -1,9 +1,8 @@
 package decider.event.store;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import decider.event.store.CounterReadModel.CounterEvent;
-import decider.event.store.CounterReadModel.CounterState;
 import decider.event.store.config.PubSubConnection;
+import domain.CounterDecider.CounterEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -53,10 +52,9 @@ public class App implements CommandLineRunner {
         // load initial state from view table
         // kick off main loop.
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
-        var readModel = new CounterReadModel();
         var materializer =
-                new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, readModel);
-        var run = materializer.process(loadInitialState(), loadCheckpoint());
+                new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper);
+        var run = materializer.process(loadInitialState(), loadCheckpoint(), CounterState::apply);
         run.blockLast();
     }
 }

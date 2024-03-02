@@ -3,7 +3,6 @@ package decider.event.store;
 import static org.springframework.data.relational.core.query.Criteria.*;
 import static org.springframework.data.relational.core.query.Query.*;
 
-import decider.event.store.CounterReadModel.CounterState;
 import decider.event.store.DbRecordTypes.CounterCheckpoint;
 import decider.event.store.DbRecordTypes.EventLog;
 import io.r2dbc.postgresql.api.Notification;
@@ -33,6 +32,7 @@ public class Storage {
     }
 
     public Mono<CounterCheckpoint> getCheckpoint() {
+        log.info("getting checkpoint");
         return this.template.select(CounterCheckpoint.class).first();
     }
 
