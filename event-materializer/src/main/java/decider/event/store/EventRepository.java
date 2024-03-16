@@ -12,12 +12,12 @@ import reactor.core.publisher.Flux;
 
 @Component
 @Slf4j
-public class Storage {
+public class EventRepository {
 
     public final R2dbcEntityTemplate template;
 
     @Autowired
-    public Storage(R2dbcEntityTemplate template) {
+    public EventRepository(R2dbcEntityTemplate template) {
         this.template = template;
     }
 

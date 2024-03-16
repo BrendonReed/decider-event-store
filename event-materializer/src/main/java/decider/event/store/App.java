@@ -21,19 +21,19 @@ public class App implements CommandLineRunner {
     // save in postgres
     // do subscription on event log to make view
 
-    private Storage storage;
+    private EventRepository storage;
     private PubSubConnection pubSubConnection;
     private ObjectMapper objectMapper;
     private JsonUtil jsonUtil;
     private CounterStatePersistence statePersistence;
 
     public App(
-            Storage storage,
+            EventRepository eventRepository,
             PubSubConnection pubSubConnection,
             ObjectMapper objectMapper,
             JsonUtil jsonUtil,
             CounterStatePersistence statePersistence) {
-        this.storage = storage;
+        this.storage = eventRepository;
         this.pubSubConnection = pubSubConnection;
         this.objectMapper = objectMapper;
         this.jsonUtil = jsonUtil;

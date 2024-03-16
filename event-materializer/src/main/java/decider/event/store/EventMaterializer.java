@@ -8,13 +8,13 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 public class EventMaterializer<S, E> {
-    public Storage storage;
+    public EventRepository storage;
     private SerializationMapper<E> mapper;
     private PubSubConnection pubSubConnection;
     private StatePersistance<S> persistance;
 
     public EventMaterializer(
-            Storage storage,
+            EventRepository storage,
             PubSubConnection pubSubConnection,
             SerializationMapper<E> mapper,
             StatePersistance<S> persistance) {
