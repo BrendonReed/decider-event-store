@@ -13,7 +13,7 @@ import decider.event.store.CounterSerialization;
 import decider.event.store.InfrastructureConfiguration;
 import decider.event.store.JsonUtil;
 import decider.event.store.PubSubConnection;
-import decider.event.store.Storage;
+import decider.event.store.CommandProcessingRepository;
 import domain.CounterDecider;
 import domain.CounterDecider.Increment;
 import java.time.LocalDateTime;
@@ -43,7 +43,7 @@ public class TransactionTest {
     static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
     @Autowired
-    Storage storage;
+    CommandProcessingRepository storage;
 
     @Autowired
     PubSubConnection pubSubConnection;

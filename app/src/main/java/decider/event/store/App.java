@@ -1,11 +1,9 @@
 package decider.event.store;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import domain.CounterDecider;
 import java.time.Instant;
 import java.util.Scanner;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -23,17 +21,15 @@ public class App implements CommandLineRunner {
     // create evolve function (apply): state -> event -> state
     // save in postgres
     // do subscription on event log to make view
-    @Autowired
-    private Storage storage;
-
-    @Autowired
+    private CommandProcessingRepository storage;
     private PubSubConnection pubSubConnection;
+    private JsonUtil jsonUtil;
 
-    @Autowired
-    public ObjectMapper objectMapper;
-
-    @Autowired
-    public JsonUtil jsonUtil;
+    public App(CommandProcessingRepository storage, PubSubConnection pubSubConnection, JsonUtil jsonUtil) {
+        this.storage = storage;
+        this.pubSubConnection = pubSubConnection;
+        this.jsonUtil = jsonUtil;
+    }
 
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);

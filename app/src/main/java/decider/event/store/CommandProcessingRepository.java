@@ -23,13 +23,13 @@ import shared.SequentialUniqueIdObserver;
 
 @Component
 @Slf4j
-public class Storage {
+public class CommandProcessingRepository {
 
     public final R2dbcEntityTemplate template;
     private final JsonUtil jsonUtil;
 
     @Autowired
-    public Storage(R2dbcEntityTemplate template, JsonUtil jsonUtil) {
+    public CommandProcessingRepository(R2dbcEntityTemplate template, JsonUtil jsonUtil) {
         this.template = template;
         this.jsonUtil = jsonUtil;
     }
@@ -128,7 +128,7 @@ public class Storage {
         });
     }
 
-    public Mono<Long> getLatestEventId() {
+    private Mono<Long> getLatestEventId() {
         var sql = "select max(id) max_id from event_log";
 
         return template.getDatabaseClient()

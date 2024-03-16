@@ -15,13 +15,13 @@ record DecisionResult<S, E>(S state, List<? extends E> newEvents, String command
 
 @Slf4j
 public class CommandProcessor<C, E, S> {
-    private Storage storage;
+    private CommandProcessingRepository storage;
     private PubSubConnection pubSubConnection;
     private Decider<C, E, S> decider;
     private SerializationMapper<C, E> dtoMapper;
 
     public CommandProcessor(
-            Storage storage,
+            CommandProcessingRepository storage,
             PubSubConnection pubSubConnection,
             Decider<C, E, S> decider,
             SerializationMapper<C, E> dtoMapper) {
