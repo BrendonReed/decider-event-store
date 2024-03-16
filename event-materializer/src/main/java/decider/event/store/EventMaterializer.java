@@ -1,8 +1,7 @@
 package decider.event.store;
 
-import java.util.function.BiFunction;
-
 import decider.event.store.config.PubSubConnection;
+import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

@@ -1,11 +1,10 @@
 package decider.event.store;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import decider.event.store.DbRecordTypes.EventLog;
 import domain.CounterDecider.CounterEvent;
 import domain.CounterDecider.Decremented;
 import domain.CounterDecider.Incremented;
-import decider.event.store.DbRecordTypes.EventLog;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
