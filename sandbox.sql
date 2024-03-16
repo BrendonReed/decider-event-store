@@ -90,9 +90,12 @@ truncate processed_command;
 truncate command_log;
 
 --decider.event.store.Decider$Increment
-INSERT INTO command_log (request_id, command_type, command)
+INSERT INTO command_log (request_id, tenant_id, stream_id, as_of_revision_id, command_type, command)
 SELECT
     uuid_generate_v4(),
+    1,
+    '3BE87B37-B538-40BC-A53C-24A630BFFA2A',
+    generate_series - 1,
     'domain.CounterDecider$Increment',
     ('{"amount": ' || generate_series || ', "streamId": "3BE87B37-B538-40BC-A53C-24A630BFFA2A", "tenantId": 1 }')::jsonb
 FROM generate_series(1, 10);

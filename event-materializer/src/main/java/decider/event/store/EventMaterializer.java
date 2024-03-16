@@ -12,14 +12,17 @@ public class EventMaterializer<S, E> {
     public Storage storage;
     private SerializationMapper<E> mapper;
     private PubSubConnection pubSubConnection;
+    private StatePersistance<S> persistance;
 
     public EventMaterializer(
             Storage storage,
             PubSubConnection pubSubConnection,
-            SerializationMapper<E> mapper) {
+            SerializationMapper<E> mapper,
+            StatePersistance<S> persistance) {
         this.storage = storage;
         this.mapper = mapper;
         this.pubSubConnection = pubSubConnection;
+        this.persistance = persistance;
     }
 
     // in a loop -
@@ -43,7 +46,7 @@ public class EventMaterializer<S, E> {
                                 .skip(1) // skip because scan emits for the inital state, which we don't want to process
                         ;
                 var save = dbEvents.zipWith(newStates, (eventDto, nextState) -> {
-                            return storage.saveStateAndCheckpoint(eventDto.id(), nextState);
+                            return persistance.saveStateAndCheckpoint(eventDto.id(), nextState);
                         })
                         .concatMap(e -> e);
                 return save;

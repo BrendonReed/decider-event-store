@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
-public class Storage {
+public class Storage implements StatePersistance<CounterState> {
 
     public final R2dbcEntityTemplate template;
 
@@ -36,8 +36,16 @@ public class Storage {
         return this.template.select(CounterCheckpoint.class).first();
     }
 
+    @Override
     @Transactional
-    public <S> Mono<S> saveStateAndCheckpoint(Long checkpoint, S nextState) {
+    public Mono<CounterState> saveStateAndCheckpoint(Long checkpoint, CounterState nextState) {
+        return this.template
+                .update(new CounterCheckpoint(1L, checkpoint))
+                .flatMap(c -> this.template.update(nextState).onErrorResume(error -> template.insert(nextState)));
+    }
+
+    @Transactional
+    public <S> Mono<S> saveStateAndCheckpoint2(Long checkpoint, S nextState) {
         // TODO: this needs to be idempotent for it to work
         // TODO: maybe embed the checkpoint or make it generic. Hardcoding it here isn't ideal
         return this.template
@@ -97,4 +105,6 @@ public class Storage {
                 })
                 .all();
     }
+
+
 }

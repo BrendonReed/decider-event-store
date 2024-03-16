@@ -53,7 +53,7 @@ public class App implements CommandLineRunner {
         // kick off main loop.
         var mapper = new CounterReadModelSerialization(jsonUtil, objectMapper);
         var materializer =
-                new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper);
+                new EventMaterializer<CounterState, CounterEvent>(storage, pubSubConnection, mapper, storage);
         var run = materializer.process(loadInitialState(), loadCheckpoint(), CounterState::apply);
         run.blockLast();
     }
