@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
@@ -40,7 +41,7 @@ public class Storage {
                 .all();
     }
 
-    public Flux<CommandLog> getCommands(int batchSize, long lastCommand) {
+    private Flux<CommandLog> getCommands(int batchSize, long lastCommand) {
         var sql =
                 """
             select command_log.*
@@ -53,28 +54,6 @@ public class Storage {
                 .sql(sql)
                 .bind("batchSize", batchSize)
                 .bind("lastCommand", lastCommand)
-                .map((row, metadata) -> {
-                    CommandLog command = template.getConverter().read(CommandLog.class, row, metadata);
-                    return command;
-                })
-                .all();
-    }
-
-    public Flux<CommandLog> getCommands(int batchSize) {
-        var sql =
-                """
-            select command_log.*
-            from command_log
-            where not exists (
-                select *
-                from processed_command
-                where command_id = command_log.id)
-            order by command_log.id
-            limit :batchSize
-            """;
-        return template.getDatabaseClient()
-                .sql(sql)
-                .bind("batchSize", batchSize)
                 .map((row, metadata) -> {
                     CommandLog command = template.getConverter().read(CommandLog.class, row, metadata);
                     return command;
@@ -108,6 +87,7 @@ public class Storage {
                 .matching(query(where("stream_id").is(streamId).and("id").greaterThan(expectedEventId)))
                 .one();
     }
+
     // TODO: add test to make sure the transaction works.
     @Transactional
     public <ED> Mono<ProcessedCommand> saveDtoRejectConflict(
@@ -115,10 +95,6 @@ public class Storage {
         // because of the way stream is processed, it's possible to have duplicates
         // so it's important that this process is idempotent, so if the command
         // has already been processed, then just skip it.
-        // var existing = template.select(ProcessedCommand.class)
-        //         .from("processed_command")
-        //         .matching(query(where("command_id").is(commandLogId)))
-        //         .one();
         var conflicting = getConflictingEvents(streamId, asOfRevisionId);
         var saveFailedOnConflict = conflicting.flatMap(e -> {
             log.info("found conflict");
@@ -141,43 +117,9 @@ public class Storage {
             var pc = new ProcessedCommand(commandLogId, maxEvent.id(), "success");
             return template.insert(pc);
         });
-        var x = conflicting.switchIfEmpty(saveEvents);
-        var z = saveFailedOnConflict.switchIfEmpty(saveEventsAndCommand);
-        // var y = x.flatMap(maxEvent -> {
-        //     log.info("saving events from command: {} expecting: {}", commandLogId, asOfRevisionId);
-        //     var pc = new ProcessedCommand(commandLogId, maxEvent.id(), "success");
-        //     return template.insert(pc);
-        // });
-        return z;
+        return saveFailedOnConflict.switchIfEmpty(saveEventsAndCommand);
     }
-    // TODO: add test to make sure the transaction works.
-    @Transactional
-    public <ED> Mono<ProcessedCommand> saveDto(Long commandLogId, List<EventLog> events) {
-        // because of the way stream is processed, it's possible to have duplicates
-        // so it's important that this process is idempotent, so if the command
-        // has already been processed, then just skip it.
-        // var existing = template.select(ProcessedCommand.class)
-        //         .from("processed_command")
-        //         .matching(query(where("command_id").is(commandLogId)))
-        //         .one();
-        Mono<ProcessedCommand> existing = Mono.empty();
 
-        var saveEvents = Flux.fromIterable(events)
-                .flatMapSequential(event -> {
-                    return template.insert(event);
-                })
-                .reduce((maxObject, nextObject) -> {
-                    if (nextObject.id() > maxObject.id()) {
-                        return nextObject;
-                    } else {
-                        return maxObject;
-                    }
-                });
-        return existing.switchIfEmpty(saveEvents.flatMap(maxEvent -> {
-            var pc = new ProcessedCommand(commandLogId, maxEvent.id(), "success");
-            return template.insert(pc);
-        }));
-    }
 
     public Mono<ProcessedCommand> saveFailedCommand(Long commandLogId) {
         return getLatestEventId().flatMap(eventId -> {
@@ -185,18 +127,6 @@ public class Storage {
             return template.insert(pc);
         });
     }
-
-    // public Flux<? extends Event<?>> getLatestEvents(Long latestEvent) {
-    //     List<Criteria> criteriaList = new ArrayList<>();
-
-    //     criteriaList.add(where("id").greaterThan(latestEvent));
-    //     Criteria combinedCriteria = criteriaList.stream().reduce(Criteria.empty(), Criteria::and, Criteria::and);
-    //     return template.select(EventLog.class)
-    //             .from("event_log")
-    //             .matching(query(combinedCriteria))
-    //             .all()
-    //             .map(this::toEvent);
-    // }
 
     public Mono<Long> getLatestEventId() {
         var sql = "select max(id) max_id from event_log";
