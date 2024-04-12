@@ -5,7 +5,7 @@ create table event_log (
   tenant_id bigint,
   stream_id uuid, 
   -- seq_no bigint not null,
-  transaction_time timestampz default now(),
+  transaction_time timestamptz default now(),
   event_type text,
   payload jsonb not null
   -- correlation_id uuid not null
@@ -17,7 +17,7 @@ create table command_log (
   tenant_id bigint,
   stream_id uuid, 
   as_of_revision_id bigint,
-  transaction_time timestampz default now(),
+  transaction_time timestamptz default now(),
   command_type text,
   command jsonb not null
 );
@@ -26,7 +26,7 @@ create table processed_command (
   command_id bigint primary key,
   event_log_id bigint, -- most recent event after processing
   disposition text
-  , transaction_time timestampz default now()
+  , transaction_time timestamptz default now()
   , CHECK (disposition != 'force failure')
   --, CHECK (command_id < 5)
 );

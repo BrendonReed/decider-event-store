@@ -98,7 +98,6 @@ public class TransactionTest {
                 .verifyComplete();
     }
 
-    @Disabled
     @Test
     void ArithmeticSequence() throws JsonProcessingException {
         // this verifies general operation
@@ -122,7 +121,7 @@ public class TransactionTest {
         var dtoMapper = new CounterSerialization(this.jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
         commandProcessor
-                .process(100, 500)
+                .process(500, 500)
                 .take(elementCount)
                 .as(StepVerifier::create)
                 .expectNextCount(999)
