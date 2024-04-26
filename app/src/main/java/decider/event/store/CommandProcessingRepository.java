@@ -67,7 +67,8 @@ public class CommandProcessingRepository {
         var r = Flux.defer(() -> {
             return getCommands(batchSize, uniqueFilter.max.get());
         });
-        return r.repeat();
+        return r.filter(c -> uniqueFilter.isFirstInstance(c.id()))
+            .repeat();
     }
 
     public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommands(
