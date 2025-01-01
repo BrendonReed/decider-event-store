@@ -48,7 +48,7 @@ public class CommandProcessor<C, E, S> {
 
         var listener = pubSubConnection.registerListener("command_logged");
         var allCommands = storage.getInfiniteStreamOfUnprocessedCommands2(listener, batchSize, pollIntervalMilliseconds)
-                .share();
+                .cache();
         var run = initialState
                 .doOnTerminate(() -> {
                     Instant end = Instant.now();
