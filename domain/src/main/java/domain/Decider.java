@@ -1,4 +1,5 @@
 package domain;
+
 import java.util.List;
 
 public interface Decider<C, E, S> {
