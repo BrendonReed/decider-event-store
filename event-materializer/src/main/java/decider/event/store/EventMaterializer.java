@@ -39,7 +39,7 @@ public class EventMaterializer<S, E> {
                 var listener = pubSubConnection.registerListener("event_logged");
                 // var dbEvents = storage.getEvents(100);
                 var dbEvents = storage.getInfiniteStreamOfUnprocessedEvents(listener, checkpoint)
-                        .share();
+                        .cache();
                 var mapped = dbEvents.map(mapper::toEvent);
                 var newStates = mapped.scan(startState, accumulator)
                                 .skip(1) // skip because scan emits for the inital state, which we don't want to process
