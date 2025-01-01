@@ -1,4 +1,4 @@
-package shared;
+package com.example.eventsourcing.infrastructure;
 
 import java.util.List;
 import java.util.function.BiFunction;

@@ -3,6 +3,8 @@ package decider.event.store.componentTests;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThat;
 
+import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
+import com.example.eventsourcing.infrastructure.JsonUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.AddingDecider;
@@ -11,7 +13,6 @@ import decider.event.store.AddingSerialization;
 import decider.event.store.CommandProcessor;
 import decider.event.store.CounterSerialization;
 import decider.event.store.InfrastructureConfiguration;
-import shared.JsonUtil;
 import decider.event.store.PubSubConnection;
 import domain.CounterDecider;
 import domain.CounterDecider.Increment;
@@ -33,7 +34,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
-import shared.CommandProcessingRepository;
 
 @ActiveProfiles("test")
 @Testcontainers

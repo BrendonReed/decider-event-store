@@ -1,9 +1,10 @@
 package decider.event.store;
 
-import shared.DbRecordTypes.CommandLog;
-import shared.DbRecordTypes.EventLog;
-import shared.JsonUtil;
-import shared.SerializationMapper;
+import com.example.eventsourcing.infrastructure.JsonUtil;
+import com.example.eventsourcing.infrastructure.SerializationMapper;
+import com.example.eventsourcing.infrastructure.DbRecordTypes.CommandLog;
+import com.example.eventsourcing.infrastructure.DbRecordTypes.EventLog;
+
 import domain.CounterDecider.CounterCommand;
 import domain.CounterDecider.CounterEvent;
 import domain.CounterDecider.Decrement;

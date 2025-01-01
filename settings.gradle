@@ -15,7 +15,7 @@ rootProject.name = 'decider-event-store'
 include('app')
 include('event-materializer')
 include('io')
-include('shared')
+include('infrastructure')
 include('domain')
 include('shared-abstractions')
 //include('command-processor')

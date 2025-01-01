@@ -9,11 +9,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-import reactor.core.publisher.Flux;
-import shared.CommandProcessingRepository;
-import shared.JsonUtil;
 
-@SpringBootApplication(scanBasePackages = {"decider.event.store", "shared"})
+import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
+import com.example.eventsourcing.infrastructure.JsonUtil;
+
+import reactor.core.publisher.Flux;
+
+@SpringBootApplication(scanBasePackages = {"decider.event.store", "com.example.eventsourcing.infrastructure"})
 //@SpringBootApplication
 @EnableTransactionManagement
 @Slf4j

@@ -1,19 +1,20 @@
 package decider.event.store;
 
-import shared.CommandProcessingRepository;
-import shared.DbRecordTypes.CommandLog;
-import shared.SerializationMapper;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.example.eventsourcing.Decider;
+import com.example.eventsourcing.infrastructure.SerializationMapper;
+import com.example.eventsourcing.infrastructure.Utils2;
+import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
+import com.example.eventsourcing.infrastructure.DbRecordTypes.CommandLog;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import shared.Utils2;
 
 record DecisionResult<S, E>(S state, List<? extends E> newEvents, String commandDisposition) {}
 

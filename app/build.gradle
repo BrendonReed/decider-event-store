@@ -38,9 +38,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-json'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-	implementation project(':shared')
 	implementation project(':domain')
 	implementation project(':shared-abstractions')
+	implementation project(':infrastructure')
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

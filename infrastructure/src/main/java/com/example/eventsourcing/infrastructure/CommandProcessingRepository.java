@@ -1,4 +1,4 @@
-package shared;
+package com.example.eventsourcing.infrastructure;
 
 import static org.springframework.data.relational.core.query.Criteria.*;
 import static org.springframework.data.relational.core.query.Query.*;
@@ -13,11 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.eventsourcing.infrastructure.DbRecordTypes.CommandLog;
+import com.example.eventsourcing.infrastructure.DbRecordTypes.EventLog;
+import com.example.eventsourcing.infrastructure.DbRecordTypes.ProcessedCommand;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import shared.DbRecordTypes.CommandLog;
-import shared.DbRecordTypes.EventLog;
-import shared.DbRecordTypes.ProcessedCommand;
 
 @Component
 @Slf4j
