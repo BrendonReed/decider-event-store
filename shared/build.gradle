@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+	implementation project(':shared-abstractions')
 	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
 	implementation 'org.springframework.boot:spring-boot-starter-json'
     implementation 'org.postgresql:postgresql'

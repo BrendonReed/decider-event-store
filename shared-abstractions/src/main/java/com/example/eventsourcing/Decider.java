@@ -1,4 +1,4 @@
-package domain;
+package com.example.eventsourcing;
 
 import java.util.List;
 

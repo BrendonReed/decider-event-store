@@ -1,7 +1,8 @@
 package decider.event.store;
 
-import domain.Decider;
 import java.util.List;
+
+import com.example.eventsourcing.Decider;
 
 public class AddingDecider implements Decider<AddingDecider.AddingCommand, AddingDecider.AddingEvent, Integer> {
     // commands
