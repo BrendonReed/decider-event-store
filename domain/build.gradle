@@ -21,7 +21,7 @@ repositories {
 
 dependencies {
 	// Use JUnit Jupiter for testing.
-    implementation project(':shared-abstractions')
+	implementation project(':shared-abstractions')
 	testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'org.projectlombok:lombok:1.18.22'

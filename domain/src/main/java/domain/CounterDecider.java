@@ -1,9 +1,8 @@
 package domain;
 
+import com.example.eventsourcing.Decider;
 import java.util.List;
 import java.util.UUID;
-
-import com.example.eventsourcing.Decider;
 
 public class CounterDecider
         implements Decider<CounterDecider.CounterCommand, CounterDecider.CounterEvent, CounterDecider.CounterState> {

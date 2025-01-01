@@ -6,7 +6,6 @@ import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlResult;
 import java.util.HashMap;
 import java.util.Map;
-
 import reactor.core.publisher.Flux;
 
 public class PubSubConnection {

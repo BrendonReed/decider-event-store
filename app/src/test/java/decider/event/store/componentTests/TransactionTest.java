@@ -46,7 +46,6 @@ public class TransactionTest {
     @Autowired
     R2dbcEntityTemplate template;
 
-
     @Autowired
     PubSubConnection pubSubConnection;
 
@@ -126,14 +125,14 @@ public class TransactionTest {
         var dtoMapper = new CounterSerialization(this.jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, decider, dtoMapper);
         commandProcessor
-                .process(500, 500)
-                .take(elementCount)
+                .process(1500, 500)
                 .as(StepVerifier::create)
                 .expectNextCount(999)
                 .assertNext(lastState -> {
                     assertThat(lastState.totalCount()).isEqualTo(expected);
                 })
-                .verifyComplete();
+                .thenCancel()
+                .verify();
 
         // reload the state saved from before to verify (de)serialization
         var initialState = commandProcessor.loadInitialState();

@@ -64,10 +64,10 @@ public class CommandProcessingRepository {
     public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommands2(int batchSize, int pollIntervalMilliseconds) {
 
         var uniqueFilter = new SequentialUniqueIdObserver(0L);
-        var r = Flux.defer(() -> {
+        var commands = Flux.defer(() -> {
             return getCommands(batchSize, uniqueFilter.max.get());
-        });
-        return r.filter(c -> uniqueFilter.isFirstInstance(c.id())).repeat();
+        }).filter(c -> uniqueFilter.isFirstInstance(c.id()));
+        return commands.repeat();
     }
 
     public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommands(

@@ -1,17 +1,14 @@
 package decider.event.store;
 
-
+import com.example.eventsourcing.Decider;
+import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
+import com.example.eventsourcing.infrastructure.DbRecordTypes.CommandLog;
+import com.example.eventsourcing.infrastructure.SerializationMapper;
+import com.example.eventsourcing.infrastructure.Utils2;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.example.eventsourcing.Decider;
-import com.example.eventsourcing.infrastructure.SerializationMapper;
-import com.example.eventsourcing.infrastructure.Utils2;
-import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
-import com.example.eventsourcing.infrastructure.DbRecordTypes.CommandLog;
-
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,9 +22,7 @@ public class CommandProcessor<C, E, S> {
     private SerializationMapper<C, E> dtoMapper;
 
     public CommandProcessor(
-            CommandProcessingRepository storage,
-            Decider<C, E, S> decider,
-            SerializationMapper<C, E> dtoMapper) {
+            CommandProcessingRepository storage, Decider<C, E, S> decider, SerializationMapper<C, E> dtoMapper) {
         this.storage = storage;
         this.decider = decider;
         this.dtoMapper = dtoMapper;

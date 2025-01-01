@@ -1,5 +1,7 @@
 package decider.event.store;
 
+import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
+import com.example.eventsourcing.infrastructure.JsonUtil;
 import domain.CounterDecider;
 import java.time.Instant;
 import java.util.Scanner;
@@ -9,14 +11,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-
-import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
-import com.example.eventsourcing.infrastructure.JsonUtil;
-
 import reactor.core.publisher.Flux;
 
 @SpringBootApplication(scanBasePackages = {"decider.event.store", "com.example.eventsourcing.infrastructure"})
-//@SpringBootApplication
+// @SpringBootApplication
 @EnableTransactionManagement
 @Slf4j
 @Profile("!test")
