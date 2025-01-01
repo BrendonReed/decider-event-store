@@ -124,7 +124,7 @@ public class TransactionTest {
 
         var decider = new CounterDecider();
         var dtoMapper = new CounterSerialization(this.jsonUtil);
-        var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
+        var commandProcessor = new CommandProcessor<>(storage, decider, dtoMapper);
         commandProcessor
                 .process(500, 500)
                 .take(elementCount)
@@ -165,7 +165,7 @@ public class TransactionTest {
 
         var decider = new AddingDecider();
         var dtoMapper = new AddingSerialization(jsonUtil);
-        var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
+        var commandProcessor = new CommandProcessor<>(storage, decider, dtoMapper);
         commandProcessor
                 .process(100, 2000)
                 .take(1)
@@ -191,7 +191,7 @@ public class TransactionTest {
 
         var decider = new CounterDecider();
         var dtoMapper = new CounterSerialization(this.jsonUtil);
-        var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
+        var commandProcessor = new CommandProcessor<>(storage, decider, dtoMapper);
         commandProcessor
                 .process(100, 500)
                 .take(2)

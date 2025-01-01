@@ -59,8 +59,7 @@ public class CommandProcessingRepository {
                 .all();
     }
 
-    public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommands2(
-            Flux<Notification> sub, int batchSize, int pollIntervalMilliseconds) {
+    public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommands2(int batchSize, int pollIntervalMilliseconds) {
 
         var uniqueFilter = new SequentialUniqueIdObserver(0L);
         var r = Flux.defer(() -> {

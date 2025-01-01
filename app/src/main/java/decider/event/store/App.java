@@ -53,7 +53,7 @@ public class App implements CommandLineRunner {
         // Infra references Domain =
         var decider = new CounterDecider();
         var dtoMapper = new CounterSerialization(jsonUtil);
-        var commandProcessor = new CommandProcessor<>(storage, pubSubConnection, decider, dtoMapper);
+        var commandProcessor = new CommandProcessor<>(storage, decider, dtoMapper);
         var run = commandProcessor.process(200, 1000);
         run.blockLast();
     }

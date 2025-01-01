@@ -18,17 +18,14 @@ record DecisionResult<S, E>(S state, List<? extends E> newEvents, String command
 @Slf4j
 public class CommandProcessor<C, E, S> {
     private CommandProcessingRepository storage;
-    private PubSubConnection pubSubConnection;
     private Decider<C, E, S> decider;
     private SerializationMapper<C, E> dtoMapper;
 
     public CommandProcessor(
             CommandProcessingRepository storage,
-            PubSubConnection pubSubConnection,
             Decider<C, E, S> decider,
             SerializationMapper<C, E> dtoMapper) {
         this.storage = storage;
-        this.pubSubConnection = pubSubConnection;
         this.decider = decider;
         this.dtoMapper = dtoMapper;
     }
@@ -46,8 +43,7 @@ public class CommandProcessor<C, E, S> {
 
         var initialState = loadInitialState();
 
-        var listener = pubSubConnection.registerListener("command_logged");
-        var allCommands = storage.getInfiniteStreamOfUnprocessedCommands2(listener, batchSize, pollIntervalMilliseconds)
+        var allCommands = storage.getInfiniteStreamOfUnprocessedCommands2(batchSize, pollIntervalMilliseconds)
                 .cache();
         var run = initialState
                 .doOnTerminate(() -> {
