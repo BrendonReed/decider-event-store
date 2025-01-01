@@ -7,6 +7,7 @@ import decider.event.store.AddingDecider.GetDiff;
 import shared.DbRecordTypes.CommandLog;
 import shared.DbRecordTypes.EventLog;
 import shared.JsonUtil;
+import shared.SerializationMapper;
 
 public class AddingSerialization implements SerializationMapper<AddingCommand, AddingEvent> {
 

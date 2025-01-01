@@ -2,6 +2,7 @@ package decider.event.store;
 
 import shared.CommandProcessingRepository;
 import shared.DbRecordTypes.CommandLog;
+import shared.SerializationMapper;
 import domain.Decider;
 import java.time.Duration;
 import java.time.Instant;

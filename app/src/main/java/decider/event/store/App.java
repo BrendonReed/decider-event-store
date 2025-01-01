@@ -13,7 +13,8 @@ import reactor.core.publisher.Flux;
 import shared.CommandProcessingRepository;
 import shared.JsonUtil;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"decider.event.store", "shared"})
+//@SpringBootApplication
 @EnableTransactionManagement
 @Slf4j
 @Profile("!test")

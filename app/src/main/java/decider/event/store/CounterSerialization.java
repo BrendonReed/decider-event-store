@@ -3,6 +3,7 @@ package decider.event.store;
 import shared.DbRecordTypes.CommandLog;
 import shared.DbRecordTypes.EventLog;
 import shared.JsonUtil;
+import shared.SerializationMapper;
 import domain.CounterDecider.CounterCommand;
 import domain.CounterDecider.CounterEvent;
 import domain.CounterDecider.Decrement;

@@ -1,4 +1,4 @@
-package decider.event.store;
+package shared;
 
 import shared.DbRecordTypes.CommandLog;
 import shared.DbRecordTypes.EventLog;

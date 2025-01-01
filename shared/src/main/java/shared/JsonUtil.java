@@ -1,10 +1,13 @@
 package shared;
 
+import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.r2dbc.postgresql.codec.Json;
 
+@Component
 public class JsonUtil {
 
     public final ObjectMapper objectMapper;

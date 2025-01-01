@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -43,7 +44,8 @@ public class TransactionTest {
     static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
     @Autowired
-    CommandProcessingRepository storage;
+    R2dbcEntityTemplate template;
+
 
     @Autowired
     PubSubConnection pubSubConnection;
@@ -53,6 +55,9 @@ public class TransactionTest {
 
     @Autowired
     JsonUtil jsonUtil;
+
+    @Autowired
+    CommandProcessingRepository storage;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
