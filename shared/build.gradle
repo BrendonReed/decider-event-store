@@ -9,6 +9,8 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
     id "io.freefair.lombok" version "8.4"
+	id 'org.springframework.boot' version '3.3.7'
+	id 'io.spring.dependency-management' version '1.1.7'
 }
 
 repositories {
@@ -17,13 +19,17 @@ repositories {
 }
 
 dependencies {
-    // Use JUnit Jupiter for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+	implementation 'org.springframework.boot:spring-boot-starter-json'
+    implementation 'org.postgresql:postgresql'
+	implementation 'org.postgresql:r2dbc-postgresql'
     implementation 'org.projectlombok:lombok:1.18.22'
     compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
     implementation 'ch.qos.logback:logback-classic:1.4.14'
+    // Use JUnit Jupiter for testing.
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 }
 

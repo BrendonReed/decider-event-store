@@ -4,8 +4,8 @@ import decider.event.store.AddingDecider.AddingCommand;
 import decider.event.store.AddingDecider.AddingEvent;
 import decider.event.store.AddingDecider.DiffEvent;
 import decider.event.store.AddingDecider.GetDiff;
-import decider.event.store.DbRecordTypes.CommandLog;
-import decider.event.store.DbRecordTypes.EventLog;
+import shared.DbRecordTypes.CommandLog;
+import shared.DbRecordTypes.EventLog;
 
 public class AddingSerialization implements SerializationMapper<AddingCommand, AddingEvent> {
 

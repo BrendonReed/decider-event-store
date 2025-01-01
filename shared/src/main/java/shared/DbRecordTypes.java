@@ -1,4 +1,4 @@
-package decider.event.store;
+package shared;
 
 import io.r2dbc.postgresql.codec.Json;
 import java.util.UUID;

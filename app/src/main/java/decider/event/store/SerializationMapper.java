@@ -1,7 +1,7 @@
 package decider.event.store;
 
-import decider.event.store.DbRecordTypes.CommandLog;
-import decider.event.store.DbRecordTypes.EventLog;
+import shared.DbRecordTypes.CommandLog;
+import shared.DbRecordTypes.EventLog;
 
 public interface SerializationMapper<C, E> {
     C toCommand(CommandLog dto);

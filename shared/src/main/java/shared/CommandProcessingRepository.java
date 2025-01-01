@@ -1,4 +1,4 @@
-package decider.event.store;
+package shared;
 
 import static org.springframework.data.relational.core.query.Criteria.*;
 import static org.springframework.data.relational.core.query.Query.*;
@@ -18,7 +18,6 @@ import reactor.core.publisher.Mono;
 import shared.DbRecordTypes.CommandLog;
 import shared.DbRecordTypes.EventLog;
 import shared.DbRecordTypes.ProcessedCommand;
-import shared.SequentialUniqueIdObserver;
 
 @Component
 @Slf4j
@@ -165,3 +164,4 @@ public class CommandProcessingRepository {
         return template.insert(cp);
     }
 }
+
