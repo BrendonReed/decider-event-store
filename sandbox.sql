@@ -98,6 +98,7 @@ SELECT
     generate_series - 1,
     'domain.CounterDecider$Increment',
     ('{"amount": ' || generate_series || ', "streamId": "3BE87B37-B538-40BC-A53C-24A630BFFA2A", "tenantId": 1 }')::jsonb
+    , null
 FROM generate_series(1, 10);
 
 select uuid_generate_v4() command_id, generate_series id

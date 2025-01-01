@@ -14,6 +14,7 @@ plugins {
 	id 'org.springframework.boot' version '3.2.0'
 	id 'io.spring.dependency-management' version '1.1.4'
 	id "com.diffplug.spotless" version "6.21.0"
+	id "de.undercouch.download" version "5.3.0"
 }
 
 repositories {
@@ -123,4 +124,16 @@ tasks.withType(JavaCompile) {
 run {
 	standardInput = System.in
 	jvmArgs(['--enable-preview'])
+}
+
+
+task downloadNewrelic(type: Download) {
+	mkdir 'newrelic'
+	src 'https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip'
+	dest file('newrelic')
+}
+
+task unzipNewrelic(type: Copy) {
+	from zipTree(file('newrelic/newrelic-java.zip'))
+	into rootDir
 }
