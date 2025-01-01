@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import decider.event.store.AddingDecider;
 import decider.event.store.AddingDecider.GetDiff;
 import decider.event.store.AddingSerialization;
-import decider.event.store.CommandProcessingRepository;
 import decider.event.store.CommandProcessor;
 import decider.event.store.CounterSerialization;
 import decider.event.store.InfrastructureConfiguration;
@@ -33,6 +32,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
+import shared.CommandProcessingRepository;
 
 @ActiveProfiles("test")
 @Testcontainers

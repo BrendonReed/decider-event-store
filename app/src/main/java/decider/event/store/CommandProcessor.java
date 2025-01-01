@@ -1,5 +1,6 @@
 package decider.event.store;
 
+import shared.CommandProcessingRepository;
 import shared.DbRecordTypes.CommandLog;
 import domain.Decider;
 import java.time.Duration;
