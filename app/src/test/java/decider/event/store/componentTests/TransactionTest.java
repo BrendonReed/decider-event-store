@@ -11,7 +11,7 @@ import decider.event.store.AddingSerialization;
 import decider.event.store.CommandProcessor;
 import decider.event.store.CounterSerialization;
 import decider.event.store.InfrastructureConfiguration;
-import decider.event.store.JsonUtil;
+import shared.JsonUtil;
 import decider.event.store.PubSubConnection;
 import domain.CounterDecider;
 import domain.CounterDecider.Increment;
