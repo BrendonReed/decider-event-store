@@ -40,7 +40,7 @@ import reactor.test.StepVerifier;
 @SpringBootTest(classes = InfrastructureConfiguration.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
 public class TransactionTest {
 
-    // @Container
+    @Container
     static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
     @Autowired
@@ -58,7 +58,8 @@ public class TransactionTest {
     @Autowired
     CommandProcessingRepository storage;
 
-    @DynamicPropertySource
+    // for pointing test data at local db for easier observation
+    // @DynamicPropertySource
     static void configureLocalhostProperties(DynamicPropertyRegistry registry) {
         registry.add(
                 "spring.r2dbc.url",
@@ -71,7 +72,7 @@ public class TransactionTest {
         registry.add("spring.r2dbc.password", () -> "password");
     }
 
-    // @DynamicPropertySource
+    @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add(
                 "spring.r2dbc.url",
@@ -84,7 +85,7 @@ public class TransactionTest {
         registry.add("spring.r2dbc.password", postgresContainer::getPassword);
     }
 
-    // @BeforeEach
+    @BeforeEach
     public void runFlywayMigrations() {
         // Obtain the base directory of the project
         String baseDir = System.getProperty("user.dir");
@@ -122,10 +123,10 @@ public class TransactionTest {
         // which can't be prevented. It does that by configuring the batch size
         // and polling interval the downstream processing can't keep up.
         var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A");
-        var elementCount = 200;
-        var expected = 20100L; // for sum of 1 to 200
-        //var elementCount = 1000;
-        //var expected = 500500L; // for sum of 1 to 1000
+        // var elementCount = 200;
+        // var expected = 20100L; // for sum of 1 to 200
+        var elementCount = 1000;
+        var expected = 500500L; // for sum of 1 to 1000
 
         for (var i = 1; i <= elementCount; i++) {
             var command = new Increment(i, 1L, streamId);
@@ -136,7 +137,7 @@ public class TransactionTest {
         var decider = new CounterDecider();
         var dtoMapper = new CounterSerialization(this.jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, decider, dtoMapper);
-        StepVerifier.create(commandProcessor.processWithDbState(1500, 5000))
+        StepVerifier.create(commandProcessor.processWithDbState(500, 100))
             .expectNextCount(elementCount - 1)
             .expectNextMatches(lastState -> { 
                 System.out.println("value: " + lastState);
@@ -145,21 +146,8 @@ public class TransactionTest {
             .thenCancel()
             .verify()
         ;
-
-        // System.out.println("First");
-        // commandProcessor
-        //         .process(1500, 500)
-        //         .as(StepVerifier::create)
-        //         .expectNextCount(elementCount)
-        //         .assertNext(lastState -> {
-        //             assertThat(lastState.totalCount()).isEqualTo(expected);
-        //         })
-        //         .thenCancel()
-        //         .verify();
-
     }
 
-    @Disabled
     @Test
     void FailsBusinessRule() throws JsonProcessingException {
         var commands = Flux.just(
