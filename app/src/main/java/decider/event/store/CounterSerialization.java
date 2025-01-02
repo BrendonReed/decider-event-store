@@ -31,7 +31,7 @@ public class CounterSerialization implements SerializationMapper<CounterCommand,
     public EventLog serialize(CounterEvent entity) {
         var eventType = entity.getClass().getName();
         var asJson = jsonUtil.serialize(entity);
-        return new EventLog(null, entity.tenantId(), entity.streamId(), eventType, asJson);
+        return new EventLog(null, entity.tenantId(), entity.streamId().toString(), eventType, asJson);
     }
 
     public CounterCommand toCommand(CommandLog dto) {

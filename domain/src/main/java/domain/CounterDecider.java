@@ -18,7 +18,7 @@ public class CounterDecider
 
     @Override
     public CounterState initialState() {
-        return new CounterState(UUID.randomUUID(), 0);
+        return new CounterState(null, 0);
     }
 
     public boolean isTerminal(CounterState state) {

@@ -10,6 +10,8 @@ import java.util.Random;
 import java.util.UUID;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -67,7 +69,7 @@ public class DbSandbox {
         });
     }
 
-    @Disabled
+    @EnabledIfEnvironmentVariable(named = "GENERATELOCALDATA", matches = "true")
     @Test
     public void GenerateCommands() {
         var cf = connectionFactory();

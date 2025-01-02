@@ -23,7 +23,7 @@ public class SequentialUniqueIdTransform {
             log.debug("first element: {}", value);
             return true;
         } else if (value == currentMax + 1) {
-            log.debug("approving: {}", value);
+            // log.debug("approving: {}", value);
             max.updateAndGet(current -> value);
             return true;
         } else if (value <= currentMax) {

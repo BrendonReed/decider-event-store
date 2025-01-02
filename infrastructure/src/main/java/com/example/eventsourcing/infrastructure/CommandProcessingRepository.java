@@ -20,6 +20,7 @@ import com.example.eventsourcing.infrastructure.DbRecordTypes.ProcessedCommand;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 @Component
 @Slf4j
@@ -50,6 +51,7 @@ public class CommandProcessingRepository {
             order by command_log.id
             limit :batchSize
             """;
+        log.info("Querying from {}", lastCommand);
         return template.getDatabaseClient()
                 .sql(sql)
                 .bind("batchSize", batchSize)
@@ -58,16 +60,27 @@ public class CommandProcessingRepository {
                     CommandLog command = template.getConverter().read(CommandLog.class, row, metadata);
                     return command;
                 })
-                .all();
+                .all()
+                .doOnError(e -> {
+                    log.error("Failed getting commands", e);
+                });
     }
 
-    public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommands2(int batchSize, int pollIntervalMilliseconds) {
+    public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommandsThroughput(SequentialUniqueIdObserver uniqueFilter, int batchSize, int pollIntervalMilliseconds) {
 
-        var uniqueFilter = new SequentialUniqueIdObserver(0L);
-        var commands = Flux.defer(() -> {
-            return getCommands(batchSize, uniqueFilter.max.get());
-        }).filter(c -> uniqueFilter.isFirstInstance(c.id()));
-        return commands.repeat();
+        var retrySpec = Retry.fixedDelay(Long.MAX_VALUE, Duration.ofMillis(2000)).filter(RepeatWhenEmptyException.class::isInstance);
+        var commands = Flux.defer(
+            () -> { return getCommands(batchSize, uniqueFilter.max.get());
+        })
+        .filter(c -> uniqueFilter.isFirstInstance(c.id()))
+        ;
+        return commands
+            .switchIfEmpty(x -> {
+                throw new RepeatWhenEmptyException();
+            })
+            .repeat()
+            .retryWhen(retrySpec)
+            ;
     }
 
     public Flux<CommandLog> getInfiniteStreamOfUnprocessedCommands(
@@ -90,7 +103,7 @@ public class CommandProcessingRepository {
         ;
     }
 
-    public Mono<EventLog> getConflictingEvents(UUID streamId, Long expectedEventId) {
+    public Mono<EventLog> getConflictingEvents(String streamId, Long expectedEventId) {
         return template.select(EventLog.class)
                 .from("event_log")
                 .matching(query(where("stream_id").is(streamId).and("id").greaterThan(expectedEventId)))
@@ -100,7 +113,7 @@ public class CommandProcessingRepository {
     // TODO: add test to make sure the transaction works.
     @Transactional
     public <ED> Mono<ProcessedCommand> saveDtoRejectConflict(
-            Long commandLogId, List<EventLog> events, UUID streamId, Long asOfRevisionId) {
+            Long commandLogId, List<EventLog> events, String streamId, Long asOfRevisionId) {
         // because of the way stream is processed, it's possible to have duplicates
         // so it's important that this process is idempotent, so if the command
         // has already been processed, then just skip it.
@@ -122,7 +135,7 @@ public class CommandProcessingRepository {
                     }
                 });
         var saveEventsAndCommand = saveEvents.flatMap(maxEvent -> {
-            log.info("saving events from command: {} expecting: {}", commandLogId, asOfRevisionId);
+            log.trace("saving events from command: {} expecting: {}", commandLogId, asOfRevisionId);
             var pc = new ProcessedCommand(commandLogId, maxEvent.id(), "success");
             return template.insert(pc);
         });
@@ -136,8 +149,8 @@ public class CommandProcessingRepository {
         });
     }
 
-    private Mono<Long> getLatestEventId() {
-        var sql = "select max(id) max_id from event_log";
+    public Mono<Long> getLatestEventId() {
+        var sql = "select coalesce(max(id), 0) max_id from event_log";
 
         return template.getDatabaseClient()
                 .sql(sql)
@@ -145,6 +158,34 @@ public class CommandProcessingRepository {
                     return row.get("max_id", Long.class);
                 })
                 .one();
+    }
+
+    public Mono<Long> getLatestCommandId() {
+        var sql = """
+            select coalesce(max(command_id), 0) max_id 
+            from processed_command
+            """;
+
+        return template.getDatabaseClient()
+                .sql(sql)
+                .map(row -> {
+                    return row.get("max_id", Long.class);
+                })
+                .one();
+    }
+
+    public Flux<EventLog> getEventsForStream(String streamId) {
+        var sql = """
+            select event_log.*
+            from event_log
+            where stream_id = :streamId
+            order by event_log.id 
+            """;
+        return template.getDatabaseClient()
+            .sql(sql)
+            .bind("streamId", streamId)
+            .map((row, metadata) -> template.getConverter().read(EventLog.class, row, metadata))
+            .all();
     }
 
     public Flux<LocalDateTime> queryCurrentTime() {
@@ -158,11 +199,17 @@ public class CommandProcessingRepository {
     }
 
     public <T> Mono<CommandLog> insertCommand(
-            UUID requestId, T payload, Long tenantId, UUID streamId, Long asOfRevision) {
+            UUID requestId, T payload, Long tenantId, String streamId, Long asOfRevision) {
         var jsonMeta = jsonUtil.toJson(payload);
         var cp = new CommandLog(
                 null, requestId, tenantId, streamId, asOfRevision, jsonMeta.objectType(), jsonMeta.json());
         return template.insert(cp);
+    }
+
+    public static class RepeatWhenEmptyException extends RuntimeException {
+        public RepeatWhenEmptyException() {
+            super("For catching to prevent onComplete");
+        }
     }
 }
 

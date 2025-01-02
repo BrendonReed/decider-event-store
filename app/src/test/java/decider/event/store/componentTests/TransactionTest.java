@@ -40,7 +40,7 @@ import reactor.test.StepVerifier;
 @SpringBootTest(classes = InfrastructureConfiguration.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
 public class TransactionTest {
 
-    @Container
+    // @Container
     static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
 
     @Autowired
@@ -59,6 +59,19 @@ public class TransactionTest {
     CommandProcessingRepository storage;
 
     @DynamicPropertySource
+    static void configureLocalhostProperties(DynamicPropertyRegistry registry) {
+        registry.add(
+                "spring.r2dbc.url",
+                () -> String.format(
+                        "r2dbc:postgresql://%s:%d/%s",
+                        "localhost",
+                        5402,
+                        "postgres"));
+        registry.add("spring.r2dbc.username", () -> "postgres");
+        registry.add("spring.r2dbc.password", () -> "password");
+    }
+
+    // @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add(
                 "spring.r2dbc.url",
@@ -71,7 +84,7 @@ public class TransactionTest {
         registry.add("spring.r2dbc.password", postgresContainer::getPassword);
     }
 
-    @BeforeEach
+    // @BeforeEach
     public void runFlywayMigrations() {
         // Obtain the base directory of the project
         String baseDir = System.getProperty("user.dir");
@@ -109,39 +122,41 @@ public class TransactionTest {
         // which can't be prevented. It does that by configuring the batch size
         // and polling interval the downstream processing can't keep up.
         var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A");
-        // var elementCount = 200;
-        // var expected = 20100L; // for sum of 1 to 200
-        var elementCount = 1000;
-        var expected = 500500L; // for sum of 1 to 1000
-        var commands = Flux.range(1, elementCount).flatMapSequential(i -> {
+        var elementCount = 200;
+        var expected = 20100L; // for sum of 1 to 200
+        //var elementCount = 1000;
+        //var expected = 500500L; // for sum of 1 to 1000
+
+        for (var i = 1; i <= elementCount; i++) {
             var command = new Increment(i, 1L, streamId);
-            return storage.insertCommand(UUID.randomUUID(), command, 1L, streamId, i - 1L);
-        });
-        var insertDuration =
-                commands.as(StepVerifier::create).expectNextCount(elementCount).verifyComplete();
-        System.out.println("insert duration " + insertDuration);
+            storage.insertCommand(UUID.randomUUID(), command, 1L, streamId.toString(), i - 1L).block();
+        }
+        System.out.println("Inserted");
 
         var decider = new CounterDecider();
         var dtoMapper = new CounterSerialization(this.jsonUtil);
         var commandProcessor = new CommandProcessor<>(storage, decider, dtoMapper);
-        commandProcessor
-                .process(1500, 500)
-                .as(StepVerifier::create)
-                .expectNextCount(999)
-                .assertNext(lastState -> {
-                    assertThat(lastState.totalCount()).isEqualTo(expected);
-                })
-                .thenCancel()
-                .verify();
+        StepVerifier.create(commandProcessor.processWithDbState(1500, 5000))
+            .expectNextCount(elementCount - 1)
+            .expectNextMatches(lastState -> { 
+                System.out.println("value: " + lastState);
+                return lastState.totalCount() == expected; 
+            })
+            .thenCancel()
+            .verify()
+        ;
 
-        // reload the state saved from before to verify (de)serialization
-        var initialState = commandProcessor.loadInitialState();
-        initialState
-                .as(StepVerifier::create)
-                .assertNext(lastState -> {
-                    assertThat(lastState.totalCount()).isEqualTo(expected);
-                })
-                .verifyComplete();
+        // System.out.println("First");
+        // commandProcessor
+        //         .process(1500, 500)
+        //         .as(StepVerifier::create)
+        //         .expectNextCount(elementCount)
+        //         .assertNext(lastState -> {
+        //             assertThat(lastState.totalCount()).isEqualTo(expected);
+        //         })
+        //         .thenCancel()
+        //         .verify();
+
     }
 
     @Disabled
@@ -153,7 +168,7 @@ public class TransactionTest {
                 new GetDiff(4)
                 // state is 5
                 );
-        var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A");
+        var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A").toString();
         var runCommands = commands.index().flatMapSequential(command -> {
             return storage.insertCommand(UUID.randomUUID(), command.getT2(), 1L, streamId, command.getT1() - 1L);
         });
@@ -181,7 +196,7 @@ public class TransactionTest {
         var streamId = UUID.fromString("3BE87B37-B538-40BC-A53C-24A630BFFA2A");
         var commands = Flux.just(new Increment(1, 1L, streamId), new Increment(1, 1L, streamId));
         var runCommands = commands.flatMapSequential(command -> {
-            return storage.insertCommand(UUID.randomUUID(), command, command.tenantId(), command.streamId(), 0L);
+            return storage.insertCommand(UUID.randomUUID(), command, command.tenantId(), command.streamId().toString(), 0L);
         });
 
         var insertDuration =

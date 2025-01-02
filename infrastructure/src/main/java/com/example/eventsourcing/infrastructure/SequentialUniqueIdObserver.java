@@ -11,8 +11,8 @@ public class SequentialUniqueIdObserver {
     public final AtomicReference<Long> max;
 
     public SequentialUniqueIdObserver(Long seed) {
-        log.debug("Starting observer");
-        log.info("Starting observer but with info");
+        log.debug("Starting observer at {}", seed);
+        log.info("Starting observer at {} but with info", seed);
         this.min = new AtomicReference<>(seed);
         this.max = new AtomicReference<>(seed);
     }
@@ -26,7 +26,7 @@ public class SequentialUniqueIdObserver {
             log.info("first element: {}", value);
             return true;
         } else if (value == currentMax + 1) {
-            log.info("approving: {}", value);
+            log.debug("approving: {}", value);
             max.updateAndGet(current -> value);
             return true;
         } else if (value <= currentMax) {
