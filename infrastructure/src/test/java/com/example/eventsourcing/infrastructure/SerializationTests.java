@@ -1,4 +1,4 @@
-package decider.event.store.unitTests;
+package com.example.eventsourcing.infrastructure;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
