@@ -1,21 +1,12 @@
-package decider.event.store.componentTests;
+package com.example.eventsourcing.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThat;
 
-import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
-import com.example.eventsourcing.infrastructure.CommandProcessor;
-import com.example.eventsourcing.infrastructure.JsonUtil;
+import com.example.eventsourcing.infrastructure.AddingDecider.GetDiff;
+import com.example.eventsourcing.infrastructure.CounterDecider.Increment;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import decider.event.store.AddingDecider;
-import decider.event.store.AddingDecider.GetDiff;
-import decider.event.store.AddingSerialization;
-import decider.event.store.CounterSerialization;
-import decider.event.store.InfrastructureConfiguration;
-import decider.event.store.PubSubConnection;
-import domain.CounterDecider;
-import domain.CounterDecider.Increment;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -45,9 +36,6 @@ public class TransactionTest {
 
     @Autowired
     R2dbcEntityTemplate template;
-
-    @Autowired
-    PubSubConnection pubSubConnection;
 
     @Autowired
     ObjectMapper objectMapper;

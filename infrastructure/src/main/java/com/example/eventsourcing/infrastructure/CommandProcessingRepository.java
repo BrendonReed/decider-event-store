@@ -51,7 +51,7 @@ public class CommandProcessingRepository {
             order by command_log.id
             limit :batchSize
             """;
-        log.info("Querying from {}", lastCommand);
+        log.trace("Querying from {}", lastCommand);
         return template.getDatabaseClient()
                 .sql(sql)
                 .bind("batchSize", batchSize)

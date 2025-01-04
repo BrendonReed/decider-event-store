@@ -1,13 +1,13 @@
-package decider.event.store;
+package com.example.eventsourcing.infrastructure;
 
+import com.example.eventsourcing.infrastructure.AddingDecider.AddingCommand;
+import com.example.eventsourcing.infrastructure.AddingDecider.AddingEvent;
+import com.example.eventsourcing.infrastructure.AddingDecider.DiffEvent;
+import com.example.eventsourcing.infrastructure.AddingDecider.GetDiff;
 import com.example.eventsourcing.infrastructure.DbRecordTypes.CommandLog;
 import com.example.eventsourcing.infrastructure.DbRecordTypes.EventLog;
 import com.example.eventsourcing.infrastructure.JsonUtil;
 import com.example.eventsourcing.infrastructure.SerializationMapper;
-import decider.event.store.AddingDecider.AddingCommand;
-import decider.event.store.AddingDecider.AddingEvent;
-import decider.event.store.AddingDecider.DiffEvent;
-import decider.event.store.AddingDecider.GetDiff;
 
 public class AddingSerialization implements SerializationMapper<AddingCommand, AddingEvent> {
 

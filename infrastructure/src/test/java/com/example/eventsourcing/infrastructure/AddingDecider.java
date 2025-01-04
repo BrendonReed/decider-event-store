@@ -1,4 +1,4 @@
-package decider.event.store;
+package com.example.eventsourcing.infrastructure;
 
 import com.example.eventsourcing.Decider;
 import java.util.List;

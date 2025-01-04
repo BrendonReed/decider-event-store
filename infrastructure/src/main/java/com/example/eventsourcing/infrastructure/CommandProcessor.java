@@ -1,20 +1,16 @@
-package decider.event.store;
+package com.example.eventsourcing.infrastructure;
 
 import com.example.eventsourcing.Decider;
-import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
 import com.example.eventsourcing.infrastructure.DbRecordTypes.CommandLog;
-import com.example.eventsourcing.infrastructure.SequentialUniqueIdObserver;
-import com.example.eventsourcing.infrastructure.SerializationMapper;
-import com.example.eventsourcing.infrastructure.Utils2;
-import java.time.Duration;
-import java.time.Instant;
+
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-record DecisionResult<S, E>(CommandLog command, S state, List<? extends E> newEvents, boolean succeeded, RuntimeException exception) {}
+record DecisionResult<S, E>(
+        CommandLog command, S state, List<? extends E> newEvents, boolean succeeded, RuntimeException exception) {}
 
 @Slf4j
 public class CommandProcessor<C, E, S> {
@@ -47,7 +43,8 @@ public class CommandProcessor<C, E, S> {
     //     var initialState = loadInitialState();
 
     //     var uniqueFilter = new SequentialUniqueIdObserver(0L);
-    //     var allCommands = storage.getInfiniteStreamOfUnprocessedCommands2(uniqueFilter, batchSize, pollIntervalMilliseconds)
+    //     var allCommands = storage.getInfiniteStreamOfUnprocessedCommands2(uniqueFilter, batchSize,
+    // pollIntervalMilliseconds)
     //             .cache();
     //     var run = initialState
     //             .doOnTerminate(() -> {
@@ -80,16 +77,18 @@ public class CommandProcessor<C, E, S> {
         var allCommands = storage.getLatestCommandId().flatMapMany(latestCommandId -> {
             var uniqueFilter = new SequentialUniqueIdObserver(latestCommandId);
 
-            return storage.getInfiniteStreamOfUnprocessedCommandsThroughput(uniqueFilter, batchSize, pollIntervalMilliseconds);
+            return storage.getInfiniteStreamOfUnprocessedCommandsThroughput(
+                    uniqueFilter, batchSize, pollIntervalMilliseconds);
         });
 
         return allCommands.concatMap(commandDto -> {
             log.trace("Processing command: {}", commandDto);
             Mono<S> previousStateM = storage.getEventsForStream(commandDto.streamId())
-                .reduce(decider.initialState(), (agg, i) -> {
-                    var asEvent = dtoMapper.toEvent(i);
-                    return decider.apply(agg, asEvent);
-                });
+                    .reduce(decider.initialState(), (agg, i) -> {
+                        var asEvent = dtoMapper.toEvent(i);
+                        log.trace("Reducing: {}, with {}", i, agg);
+                        return decider.apply(agg, asEvent);
+                    });
             return previousStateM.flatMapMany(previousState -> {
                 log.trace("Previous State: {}", previousState);
                 return processCommands(previousState, Flux.just(commandDto));
@@ -99,9 +98,8 @@ public class CommandProcessor<C, E, S> {
 
     private Flux<S> processCommands(S state, Flux<CommandLog> someCommands) {
         var startState = new DecisionResult<S, E>(null, state, new ArrayList<>(), true, null);
-        Flux<DecisionResult<S, E>> states = someCommands
-            .scan(startState, this::accumulate)
-            .skip(1); // because scan emits the initial state
+        Flux<DecisionResult<S, E>> states =
+                someCommands.scan(startState, this::accumulate).skip(1); // because scan emits the initial state
         return states.concatMap(this::saveNext);
     }
 
@@ -113,7 +111,7 @@ public class CommandProcessor<C, E, S> {
             log.trace("current state: {}", newState);
             return new DecisionResult<S, E>(command, newState, newEvents, true, null);
         } catch (RuntimeException e) {
-            log.debug("caught business rule failure: {}", e.getLocalizedMessage());
+            log.info("caught business rule failure: {}", e.getLocalizedMessage());
             return new DecisionResult<S, E>(command, acc.state(), new ArrayList<>(), false, e);
         }
     }
@@ -121,7 +119,8 @@ public class CommandProcessor<C, E, S> {
     private Mono<S> saveNext(DecisionResult<S, E> result) {
         var streamId = result.command().streamId();
         var asOf = result.command().asOfRevisionId();
-        var eventDtos = result.newEvents().stream().map(e -> dtoMapper.serialize(e)).toList();
+        var eventDtos =
+                result.newEvents().stream().map(e -> dtoMapper.serialize(e)).toList();
         var nextState = result.state();
         return result.succeeded()
                 ? storage.saveDtoRejectConflict(result.command().id(), eventDtos, streamId, asOf)

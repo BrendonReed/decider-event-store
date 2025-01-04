@@ -1,6 +1,7 @@
 package decider.event.store;
 
 import com.example.eventsourcing.infrastructure.CommandProcessingRepository;
+import com.example.eventsourcing.infrastructure.CommandProcessor;
 import com.example.eventsourcing.infrastructure.JsonUtil;
 import domain.CounterDecider;
 import java.time.Instant;
